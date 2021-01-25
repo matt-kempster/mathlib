@@ -19,6 +19,8 @@ universes v u
 
 open category_theory category_theory.category category_theory.limits
 
+local attribute [instance] unique.subsingleton
+
 /-- Any category with pullbacks and terminal object has binary products. -/
 -- This is not an instance, as it is not always how one wants to construct binary products!
 lemma has_binary_products_of_terminal_and_pullbacks

@@ -1081,6 +1081,8 @@ variable {𝕜}
   (f : continuous_multilinear_map 𝕜 (λ (i : fin 0), G) E₂) :
   f.uncurry0 = f 0 := rfl
 
+local attribute [instance] unique.subsingleton
+
 @[simp] lemma continuous_multilinear_map.apply_zero_curry0
   (f : continuous_multilinear_map 𝕜 (λ (i : fin 0), G) E₂) {x : fin 0 → G} :
   continuous_multilinear_map.curry0 𝕜 G (f x) = f :=

@@ -108,6 +108,8 @@ namespace algebra
 
 namespace finite_type
 
+local attribute [instance] unique.subsingleton
+
 lemma self : finite_type R R := ⟨{1}, subsingleton.elim _ _⟩
 
 section

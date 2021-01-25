@@ -142,6 +142,8 @@ lemma order_emb_of_fin_last {s : finset α} {k : ℕ} (h : s.card = k) (hz : 0 <
   order_emb_of_fin s h ⟨k-1, buffer.lt_aux_2 hz⟩ = s.max' (card_pos.mp (h.symm ▸ hz)) :=
 by simp [order_emb_of_fin_apply, max'_eq_sorted_last, h]
 
+local attribute [instance] unique.subsingleton
+
 /-- `order_emb_of_fin {a} h` sends any argument to `a`. -/
 @[simp] lemma order_emb_of_fin_singleton (a : α) (i : fin 1) :
   order_emb_of_fin {a} (card_singleton a) i = a :=

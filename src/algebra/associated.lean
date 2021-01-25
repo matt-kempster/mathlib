@@ -350,6 +350,8 @@ by rw [mul_comm a, mul_comm c]; exact associated_mul_left_cancel
 section unique_units
 variables [monoid α] [unique (units α)]
 
+local attribute [instance] unique.subsingleton
+
 theorem associated_iff_eq {x y : α} : x ~ᵤ y ↔ x = y :=
 begin
   split,
@@ -475,6 +477,8 @@ units.ext (mul_eq_one_iff.1 u.val_inv).1
 
 instance unique_units : unique (units (associates α)) :=
 { default := 1, uniq := associates.units_eq_one }
+
+local attribute [instance] unique.subsingleton
 
 theorem coe_unit_eq_one (u : units (associates α)): (u : associates α) = 1 :=
 by simp

@@ -45,6 +45,7 @@ calc (X ⟶ Y) ≃ (X ⨯ ⊤_ C ⟶ Y) : iso.hom_congr (prod.right_unitor _).sy
 
 local attribute [instance] has_zero_object.has_zero
 local attribute [instance] has_zero_object.unique_to has_zero_object.unique_from
+local attribute [instance] unique.subsingleton
 
 /-- If a cartesian closed category has a zero object, each homset has exactly one element. -/
 def unique_homset_of_zero [has_zero_object C] (X Y : C) :

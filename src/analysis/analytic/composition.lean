@@ -269,6 +269,8 @@ protected def comp (q : formal_multilinear_series 𝕜 F G) (p : formal_multilin
   formal_multilinear_series 𝕜 E G :=
 λ n, ∑ c : composition n, q.comp_along_composition p c
 
+local attribute [instance] unique.subsingleton
+
 /-- The `0`-th coefficient of `q.comp p` is `q 0`. Since these maps are multilinear maps in zero
 variables, but on different spaces, we can not state this directly, so we state it when applied to
 arbitrary vectors (which have to be the zero vector). -/

@@ -212,6 +212,8 @@ protected lemma linear_map.linear_independent_iff (f : M →ₗ[R] M') (hf_inj :
   linear_independent R (f ∘ v) ↔ linear_independent R v :=
 ⟨λ h, h.of_comp f, λ h, h.map $ by simp only [hf_inj, disjoint_bot_right]⟩
 
+local attribute [instance] unique.subsingleton
+
 @[nontriviality]
 lemma linear_independent_of_subsingleton [subsingleton R] : linear_independent R v :=
 linear_independent_iff.2 (λ l hl, subsingleton.elim _ _)

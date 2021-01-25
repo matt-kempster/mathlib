@@ -85,6 +85,8 @@ begin
   apply i,
 end
 
+local attribute [instance] unique.subsingleton
+
 /-- If there is any isomorphism `G.obj ⊤ ⟶ ⊤`, then `G` preserves terminal objects. -/
 def preserves_terminal_of_is_iso
   (f : G.obj (⊤_ C) ⟶ ⊤_ D) [i : is_iso f] : preserves_limit (functor.empty C) G :=

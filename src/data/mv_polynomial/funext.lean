@@ -24,6 +24,8 @@ namespace mv_polynomial
 
 variables {R : Type*} [integral_domain R] [infinite R]
 
+local attribute [instance] unique.subsingleton
+
 private lemma funext_fin {n : ℕ} {p : mv_polynomial (fin n) R}
   (h : ∀ x : fin n → R, eval x p = 0) : p = 0 :=
 begin

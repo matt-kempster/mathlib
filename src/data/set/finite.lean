@@ -169,6 +169,8 @@ this h
 instance fintype_singleton (a : α) : fintype ({a} : set α) :=
 unique.fintype
 
+local attribute [instance] unique.subsingleton
+
 @[simp] theorem card_singleton (a : α) :
   fintype.card ({a} : set α) = 1 :=
 fintype.card_of_subsingleton _

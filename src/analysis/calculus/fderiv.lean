@@ -1972,6 +1972,8 @@ because the proof uses `is_bounded_bilinear_map.continuous_left`, proved just ab
 of its differentiability.
 -/
 
+local attribute [instance] unique.subsingleton
+
 protected lemma is_open [complete_space E] : is_open (range (coe : (E ≃L[𝕜] F) → (E →L[𝕜] F))) :=
 begin
   nontriviality E,

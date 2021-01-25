@@ -163,6 +163,8 @@ section comm_semiring
 
 variables [comm_semiring R] {p q : polynomial R}
 
+local attribute [instance] unique.subsingleton
+
 lemma multiplicity_finite_of_degree_pos_of_monic (hp : (0 : with_bot ℕ) < degree p)
   (hmp : monic p) (hq : q ≠ 0) : multiplicity.finite p q :=
 have zn0 : (0 : R) ≠ 1, from λ h, by haveI := subsingleton_of_zero_eq_one h;
@@ -388,6 +390,8 @@ else begin
   exact with_bot.coe_lt_coe.2 (nat.lt_add_of_pos_left
     (with_bot.coe_lt_coe.1 $ (degree_eq_nat_degree hq0) ▸ h0q))
 end
+
+local attribute [instance] unique.subsingleton
 
 theorem nat_degree_div_by_monic {R : Type u} [comm_ring R] (f : polynomial R) {g : polynomial R}
   (hg : g.monic) : nat_degree (f /ₘ g) = nat_degree f - nat_degree g :=

@@ -784,6 +784,7 @@ end subtype_preimage
 section fun_unique
 
 variables (α β) [unique α]
+local attribute [instance] unique.subsingleton
 
 /-- If `α` has a unique term, then the type of function `α → β` is equivalent to `β`. -/
 @[simps] def fun_unique : (α → β) ≃ β :=
@@ -1860,6 +1861,8 @@ instance {α} [subsingleton α] : subsingleton (plift α) := equiv.plift.subsing
 
 instance {α} [decidable_eq α] : decidable_eq (ulift α) := equiv.ulift.decidable_eq
 instance {α} [decidable_eq α] : decidable_eq (plift α) := equiv.plift.decidable_eq
+
+local attribute [instance] unique.subsingleton
 
 /-- If both `α` and `β` are singletons, then `α ≃ β`. -/
 def equiv_of_unique_of_unique [unique α] [unique β] : α ≃ β :=

@@ -371,6 +371,8 @@ begin
     exact fin.univ_cast_succ n }
 end
 
+local attribute [instance] unique.subsingleton
+
 @[instance, priority 10] def unique.fintype {α : Type*} [unique α] : fintype α :=
 fintype.of_subsingleton (default α)
 

@@ -64,6 +64,7 @@ def comm_semigroup (n : ℕ) : comm_semigroup (fin (n+1)) :=
   ..fin.has_mul }
 
 local attribute [instance] fin.comm_semigroup
+local attribute [instance] unique.subsingleton
 
 private lemma one_mul_aux (n : ℕ) (a : fin (n+1)) : (1 : fin (n+1)) * a = a :=
 begin

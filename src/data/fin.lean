@@ -1324,6 +1324,8 @@ rfl
 
 section monoid
 
+local attribute [instance] unique.subsingleton
+
 @[simp] protected lemma add_zero (k : fin (n + 1)) : k + 0 = k :=
 by simp [eq_iff_veq, add_def, mod_eq_of_lt (is_lt k)]
 

@@ -305,6 +305,8 @@ lemma analytic_at.sub (hf : analytic_at 𝕜 f x) (hg : analytic_at 𝕜 g x) :
   analytic_at 𝕜 (f - g) x :=
 by simpa only [sub_eq_add_neg] using hf.add hg.neg
 
+local attribute [instance] unique.subsingleton
+
 lemma has_fpower_series_on_ball.coeff_zero (hf : has_fpower_series_on_ball f pf x r)
   (v : fin 0 → E) : pf 0 v = f x :=
 begin

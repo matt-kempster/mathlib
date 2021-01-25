@@ -194,6 +194,8 @@ begin
     exact add_lt_add i.property i.property }
 end
 
+local attribute [instance] unique.subsingleton
+
 lemma vec_alt1_append (v : fin (n + 1) → α) : vec_alt1 rfl (fin.append rfl v v) = v ∘ bit1 :=
 begin
   ext i,

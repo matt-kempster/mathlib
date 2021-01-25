@@ -1141,6 +1141,8 @@ end
 lemma subalgebra.findim_eq_one_of_eq_bot {S : subalgebra F E} (h : S = ⊥) : findim F S = 1 :=
 by { rw h, exact subalgebra.findim_bot }
 
+local attribute [instance] unique.subsingleton
+
 lemma subalgebra.eq_bot_of_findim_one {S : subalgebra F E} (h : findim F S = 1) : S = ⊥ :=
 begin
   rw eq_bot_iff,

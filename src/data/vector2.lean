@@ -151,6 +151,8 @@ by rw [← nth_zero, nth_of_fn]
   (a : α) (v : vector α n) : nth (a ::ᵥ v) 0 = a :=
 by simp [nth_zero]
 
+local attribute [instance] unique.subsingleton
+
 /-- Accessing the `nth` element of a vector made up
 of one element `x : α` is `x` itself. -/
 @[simp] lemma nth_cons_nil {ix : fin 1}

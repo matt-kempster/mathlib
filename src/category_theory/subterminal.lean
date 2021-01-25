@@ -65,6 +65,8 @@ lemma is_subterminal_of_mono_is_terminal_from {T : C} (hT : is_terminal T) [mono
   is_subterminal A :=
 λ Z f g, by { rw ← cancel_mono (hT.from A), apply hT.hom_ext }
 
+local attribute [instance] unique.subsingleton
+
 /--
 If the unique morphism from `A` to the terminal object is a monomorphism, `A` is subterminal.
 The converse of `is_subterminal.mono_terminal_from`.

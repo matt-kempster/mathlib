@@ -74,6 +74,8 @@ lemma degree_eq_bot : degree p = ⊥ ↔ p = 0 :=
   exact support_eq_empty.1 (max_eq_none.1 h),
 λ h, h.symm ▸ rfl⟩
 
+local attribute [instance] unique.subsingleton
+
 @[nontriviality] lemma degree_of_subsingleton [subsingleton R] : degree p = ⊥ :=
 by rw [subsingleton.elim p 0, degree_zero]
 

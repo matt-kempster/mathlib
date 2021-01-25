@@ -142,6 +142,8 @@ variables {β}
 
 omit dec_ι
 
+local attribute [instance] unique.subsingleton
+
 /-- The natural equivalence between `⨁ _ : ι, M` and `M` when `unique ι`. -/
 protected def id (M : Type v) (ι : Type* := punit) [add_comm_monoid M] [unique ι] :
   (⨁ (_ : ι), M) ≃+ M :=

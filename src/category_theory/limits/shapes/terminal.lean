@@ -89,6 +89,8 @@ notation `⊥_` C:20 := initial C
 section
 variables {C}
 
+local attribute [instance] unique.subsingleton
+
 /-- We can more explicitly show that a category has a terminal object by specifying the object,
 and showing there is a unique morphism to it from any other object. -/
 lemma has_terminal_of_unique (X : C) [h : Π Y : C, unique (Y ⟶ X)] : has_terminal C :=

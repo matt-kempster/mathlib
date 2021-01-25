@@ -495,6 +495,8 @@ lemma times_cont_diff_within_at.differentiable_within_at {n : with_top ℕ}
   differentiable_within_at 𝕜 f s x :=
 (h.differentiable_within_at' hn).mono  (subset_insert x s)
 
+local attribute [instance] unique.subsingleton
+
 /-- A function is `C^(n + 1)` on a domain iff locally, it has a derivative which is `C^n`. -/
 theorem times_cont_diff_within_at_succ_iff_has_fderiv_within_at {n : ℕ} :
   times_cont_diff_within_at 𝕜 ((n + 1) : ℕ) f s x

@@ -106,6 +106,8 @@ to_module R _ _ $ λ i, lof R T (λ (i : subtype T), M i) ⟨i, H i.prop⟩
 
 omit dec_ι
 
+local attribute [instance] unique.subsingleton
+
 /-- The natural linear equivalence between `⨁ _ : ι, M` and `M` when `unique ι`. -/
 protected def lid (M : Type v) (ι : Type* := punit) [add_comm_monoid M] [semimodule R M]
   [unique ι] :

@@ -606,6 +606,8 @@ section unique_unit
 
 variables [comm_cancel_monoid_with_zero α] [unique (units α)]
 
+local attribute [instance] unique.subsingleton
+
 lemma units_eq_one (u : units α) : u = 1 := subsingleton.elim u 1
 
 variable [nontrivial α]

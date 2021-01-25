@@ -180,6 +180,8 @@ instance {X : C} (f : 0 ⟶ X) : mono f :=
 instance {X : C} (f : X ⟶ 0) : epi f :=
 { left_cancellation := λ Z g h w, by ext, }
 
+local attribute [instance] unique.subsingleton
+
 /-- A category with a zero object has zero morphisms.
 
     It is rarely a good idea to use this. Many categories that have a zero object have zero
@@ -311,6 +313,8 @@ def is_iso_zero_self_equiv_iso_zero (X : C) : is_iso (0 : X ⟶ X) ≃ (X ≅ 0)
 (is_iso_zero_equiv_iso_zero X X).trans subsingleton_prod_self_equiv
 
 end is_iso
+
+local attribute [instance] unique.subsingleton
 
 /-- If there are zero morphisms, any initial object is a zero object. -/
 @[priority 50]
