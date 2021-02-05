@@ -21,22 +21,21 @@ It is inspired by Isabelle/HOL's linear algebra, and hence indirectly by HOL Lig
 All definitions are given for families of vectors, i.e. `v : ι → M` where `M` is the module or
 vector space and `ι : Type*` is an arbitrary indexing type.
 
-* `is_basis R v` states that the vector family `v` is a basis, i.e. it is linearly independent and
-  spans the entire space.
+* `basis ι R M` is the type of `ι`-indexed `R`-bases for a semimodule `M`,
+  represented by a linear equiv `M ≃ₗ[R] ι →₀ R`.
 
-* `is_basis.repr hv x` is the basis version of `linear_independent.repr hv x`. It returns the
-  linear combination representing `x : M` on a basis `v` of `M` (using classical choice).
-  The argument `hv` must be a proof that `is_basis R v`. `is_basis.repr hv` is given as a linear
-  map as well.
+* `basis.repr` is the isomorphism sending `x : M` and to its coordinates `basis.repr x : ι →₀ R`
 
-* `is_basis.constr hv f` constructs a linear map `M₁ →ₗ[R] M₂` given the values `f : ι → M₂` at the
-  basis `v : ι → M₁`, given `hv : is_basis R v`.
+* `basis.constr hv f` constructs a linear map `M₁ →ₗ[R] M₂` given the values `f : ι → M₂` at the
+  basis elements `⇑b : ι → M₁`.
 
 ## Main statements
 
-* `is_basis.ext` states that two linear maps are equal if they coincide on a basis.
+* `basis.mk`: a linear independent set of vectors spanning the whole module determines a basis
 
-* `exists_is_basis` states that every vector space has a basis.
+* `basis.ext` states that two linear maps are equal if they coincide on a basis.
+
+* `nonempty_basis` states that every vector space has a basis.
 
 ## Implementation notes
 
@@ -60,6 +59,160 @@ open_locale classical big_operators
 variables {ι : Type*} {ι' : Type*} {R : Type*} {K : Type*}
 variables {M : Type*} {M' M'' : Type*} {V : Type u} {V' : Type*}
 
+section semimodule
+
+variables [semiring R] [add_comm_monoid M]
+variables [semimodule R M]
+
+section
+variables (ι) (R) (M)
+
+/-- A `basis ι R M` for a semimodule `M` is the type of `ι`-indexed `R`-bases of `M`.
+
+The basis vectors are available as `coe_fn (b : basis ι R M) : ι → M`.
+To turn a linear independent family of vectors spanning `M` into a basis, use `basis.mk`.
+They are internally represented as linear equivs `M ≃ₗ[R] (ι →₀ R)`,
+available as `basis.repr`.
+-/
+structure basis := of_repr :: (repr : M ≃ₗ[R] (ι →₀ R))
+
+end
+
+namespace basis
+
+instance : inhabited (basis ι R (ι →₀ R)) := ⟨basis.of_repr (linear_equiv.refl _ _)⟩
+
+variables (b b₁ : basis ι R M) (i : ι) (c : R) (v : ι →₀ R) (x : M)
+
+section repr
+
+/-- `b i` is the `i`th basis vector. -/
+instance : has_coe_to_fun (basis ι R M) :=
+{ F := λ _, ι → M,
+  coe := λ b i, b.repr.symm (finsupp.single i 1) }
+
+@[simp] lemma coe_of_repr (e : M ≃ₗ[R] (ι →₀ R)) :
+  ⇑(of_repr e) = λ i, e.symm (finsupp.single i 1) :=
+rfl
+
+protected lemma injective [nontrivial R] : injective b :=
+b.repr.symm.injective.comp (λ _ _, (finsupp.single_left_inj (one_ne_zero : (1 : R) ≠ 0)).mp)
+
+lemma repr_symm_single_one : b.repr.symm (finsupp.single i 1) = b i := rfl
+
+lemma repr_symm_single : b.repr.symm (finsupp.single i c) = c • b i :=
+calc b.repr.symm (finsupp.single i c)
+    = b.repr.symm (c • finsupp.single i 1) : by rw [finsupp.smul_single', mul_one]
+... = c • b i : by rw [linear_equiv.map_smul, repr_symm_single_one]
+
+@[simp] lemma repr_self : b.repr (b i) = finsupp.single i 1 :=
+linear_equiv.apply_symm_apply _ _
+
+@[simp] lemma repr_symm_apply (v) : b.repr.symm v = finsupp.total ι M R b v :=
+calc b.repr.symm v = b.repr.symm (v.sum finsupp.single) : by simp
+... = ∑ i in v.support, b.repr.symm (finsupp.single i (v i)) :
+  by rw [finsupp.sum, linear_equiv.map_sum]
+... = finsupp.total ι M R b v :
+  by simp [repr_symm_single, finsupp.total_apply, finsupp.sum]
+
+@[simp] lemma coe_repr_symm : ↑b.repr.symm = finsupp.total ι M R b :=
+linear_map.ext (λ v, b.repr_symm_apply v)
+
+@[simp] lemma repr_total : b.repr (finsupp.total _ _ _ b v) = v :=
+by { rw ← b.coe_repr_symm, exact b.repr.apply_symm_apply v }
+
+@[simp] lemma total_repr : finsupp.total _ _ _ b (b.repr x) = x :=
+by { rw ← b.coe_repr_symm, exact b.repr.symm_apply_apply x }
+
+end repr
+
+section ext
+
+variables {M₁ : Type*} [add_comm_monoid M₁] [semimodule R M₁]
+
+/-- Two linear maps are equal if they are equal on basis vectors. -/
+theorem ext {f₁ f₂ : M →ₗ[R] M₁} (h : ∀ i, f₁ (b i) = f₂ (b i)) : f₁ = f₂ :=
+by { ext x,
+     rw [← b.total_repr x, finsupp.total_apply, finsupp.sum],
+     simp only [linear_map.map_sum, linear_map.map_smul, h] }
+
+/-- Two linear equivs are equal if they are equal on basis vectors. -/
+theorem ext' {f₁ f₂ : M ≃ₗ[R] M₁} (h : ∀ i, f₁ (b i) = f₂ (b i)) : f₁ = f₂ :=
+by { ext x,
+      rw [← b.total_repr x, finsupp.total_apply, finsupp.sum],
+      simp only [linear_equiv.map_sum, linear_equiv.map_smul, h] }
+
+lemma repr_eq_iff {b : basis ι R M} {f : M →ₗ[R] ι →₀ R} :
+  ↑b.repr = f ↔ ∀ i, f (b i) = finsupp.single i 1 :=
+⟨λ h i, h ▸ b.repr_self i,
+ λ h, b.ext (λ i, (b.repr_self i).trans (h i).symm)⟩
+
+lemma repr_eq_iff' {b : basis ι R M} {f : M ≃ₗ[R] ι →₀ R} :
+  b.repr = f ↔ ∀ i, f (b i) = finsupp.single i 1 :=
+⟨λ h i, h ▸ b.repr_self i,
+  λ h, b.ext' (λ i, (b.repr_self i).trans (h i).symm)⟩
+
+/-- An unbundled version of `repr_eq_iff` -/
+lemma repr_apply_eq {f : M → ι → R}
+  (hadd : ∀ x y, f (x + y) = f x + f y) (hsmul : ∀ (c : R) (x : M), f (c • x) = c • f x)
+  (f_eq : ∀ i, f (b i) = finsupp.single i 1) (x : M) (i : ι) :
+  b.repr x i = f x i :=
+begin
+  let f_i : M →ₗ[R] R :=
+  { to_fun := λ x, f x i,
+    map_add' := λ _ _, by rw [hadd, pi.add_apply],
+    map_smul' := λ _ _, by rw [hsmul, pi.smul_apply] },
+  have : (finsupp.lapply i).comp ↑b.repr = f_i,
+  { refine b.ext (λ j, _),
+    show b.repr (b j) i = f (b j) i,
+    rw [b.repr_self, f_eq] },
+end
+
+/-- Two bases are equal if they assign the same coordinates. -/
+lemma eq_of_repr_eq_repr {b₁ b₂ : basis ι R M} (h : ∀ x i, b₁.repr x i = b₂.repr x i) :
+  b₁ = b₂ :=
+have b₁.repr = b₂.repr, by { ext, apply h },
+by { cases b₁, cases b₂, simpa }
+
+/-- Two bases are equal if their basis vectors are the same. -/
+@[ext] lemma eq_of_apply_eq {b₁ b₂ : basis ι R M} (h : ∀ i, b₁ i = b₂ i) : b₁ = b₂ :=
+suffices b₁.repr = b₂.repr, by { cases b₁, cases b₂, simpa },
+repr_eq_iff'.mpr (λ i, by rw [h, b₂.repr_self])
+
+end ext
+
+section reindex
+
+variables (e : ι ≃ ι')
+
+/-- `b.reindex (e : ι ≃ ι')` is a basis indexed by `ι'` -/
+def reindex : basis ι' R M :=
+basis.of_repr (b.repr.trans (finsupp.dom_lcongr e))
+
+@[simp] lemma reindex_apply (i' : ι') : b.reindex e i' = b (e.symm i') :=
+show (b.repr.trans (finsupp.dom_lcongr e)).symm (finsupp.single i' 1) =
+  b.repr.symm (finsupp.single (e.symm i') 1),
+by rw [linear_equiv.symm_trans_apply, finsupp.dom_lcongr_symm, finsupp.dom_lcongr_single]
+
+@[simp] lemma reindex_repr (i' : ι') : (b.reindex e).repr x i' = b.repr x (e.symm i') :=
+show (finsupp.dom_lcongr e : _ ≃ₗ[R] _) (b.repr x) i' = _,
+from finsupp.dom_lcongr_apply _ _ _
+
+/-- `b.reindex_range` is a basis indexed by `range b`, the basis vectors themselves. -/
+def reindex_range [nontrivial R] : basis (range b) R M :=
+b.reindex (equiv.of_injective b b.injective)
+
+end reindex
+
+protected lemma linear_independent : linear_independent R b :=
+linear_independent_iff.mpr $ λ l hl,
+calc l = b.repr (finsupp.total _ _ _ b l) : (b.repr_total l).symm
+   ... = 0 : by rw [hl, linear_equiv.map_zero]
+
+end basis
+
+end semimodule
+
 section module
 
 open linear_map
@@ -67,7 +220,36 @@ open linear_map
 variables {v : ι → M}
 variables [ring R] [add_comm_group M] [add_comm_group M'] [add_comm_group M'']
 variables [module R M] [module R M'] [module R M'']
-variables {a b : R} {x y : M}
+variables {c d : R} {x y : M}
+variables (b : basis ι R M)
+
+namespace basis
+
+section mk
+
+variables (hli : linear_independent R v) (hsp : span R (range v) = ⊤)
+
+/-- A linear independent family of vectors spanning the whole module is a basis. -/
+protected noncomputable def mk : basis ι R M :=
+basis.of_repr
+{ inv_fun := finsupp.total _ _ _ v,
+  left_inv := λ x, hli.total_repr ⟨x, _⟩,
+  right_inv := λ x, hli.repr_eq rfl,
+  .. hli.repr.comp (linear_map.id.cod_restrict _ (λ h, hsp.symm ▸ submodule.mem_top)) }
+
+@[simp] lemma mk_repr :
+  (basis.mk hli hsp).repr x = hli.repr ⟨x, hsp.symm ▸ submodule.mem_top⟩ :=
+rfl
+
+@[simp] lemma mk_apply (i : ι) : basis.mk hli hsp i = v i :=
+show finsupp.total _ _ _ v _ = v i, by simp
+
+@[simp] lemma coe_mk : ⇑(basis.mk hli hsp) = v :=
+funext (mk_apply _ _)
+
+end mk
+
+end basis
 
 variables (R) (v)
 /-- A family of vectors is a basis if it is linearly independent and all vectors are in the span. -/
@@ -76,86 +258,6 @@ variables {R} {v}
 
 section is_basis
 variables {s t : set M} (hv : is_basis R v)
-
-lemma is_basis.mem_span (hv : is_basis R v) : ∀ x, x ∈ span R (range v) := eq_top_iff'.1 hv.2
-
-lemma is_basis.comp (hv : is_basis R v) (f : ι' → ι) (hf : bijective f) :
-  is_basis R (v ∘ f) :=
-begin
-  split,
-  { apply hv.1.comp f hf.1 },
-  { rw[set.range_comp, range_iff_surjective.2 hf.2, image_univ, hv.2] }
-end
-
-lemma is_basis.injective [nontrivial R] (hv : is_basis R v) : injective v :=
-  λ x y h, linear_independent.injective hv.1 h
-
-lemma is_basis.range (hv : is_basis R v) : is_basis R (λ x, x : range v → M) :=
-⟨hv.1.to_subtype_range, by { convert hv.2, ext i, exact ⟨λ ⟨p, hp⟩, hp ▸ p.2, λ hi, ⟨⟨i, hi⟩, rfl⟩⟩ }⟩
-
-/-- Given a basis, any vector can be written as a linear combination of the basis vectors. They are
-given by this linear map. This is one direction of `module_equiv_finsupp`. -/
-def is_basis.repr : M →ₗ (ι →₀ R) :=
-(hv.1.repr).comp (linear_map.id.cod_restrict _ hv.mem_span)
-
-lemma is_basis.total_repr (x) : finsupp.total ι M R v (hv.repr x) = x :=
-hv.1.total_repr ⟨x, _⟩
-
-lemma is_basis.total_comp_repr : (finsupp.total ι M R v).comp hv.repr = linear_map.id :=
-linear_map.ext hv.total_repr
-
-lemma is_basis.ext {f g : M →ₗ[R] M'} (hv : is_basis R v) (h : ∀i, f (v i) = g (v i)) : f = g :=
-linear_map.ext_on_range hv.2 h
-
-lemma is_basis.repr_ker : hv.repr.ker = ⊥ :=
-linear_map.ker_eq_bot.2 $ left_inverse.injective hv.total_repr
-
-lemma is_basis.repr_range : hv.repr.range = finsupp.supported R R univ :=
-by rw [is_basis.repr, linear_map.range, submodule.map_comp,
-  linear_map.map_cod_restrict, submodule.map_id, comap_top, map_top, hv.1.repr_range,
-  finsupp.supported_univ]
-
-lemma is_basis.repr_total (x : ι →₀ R) (hx : x ∈ finsupp.supported R R (univ : set ι)) :
-  hv.repr (finsupp.total ι M R v x) = x :=
-begin
-  rw [← hv.repr_range, linear_map.mem_range] at hx,
-  cases hx with w hw,
-  rw [← hw, hv.total_repr],
-end
-
-lemma is_basis.repr_eq_single {i} : hv.repr (v i) = finsupp.single i 1 :=
-by apply hv.1.repr_eq_single; simp
-
-@[simp]
-lemma is_basis.repr_self_apply (i j : ι) : hv.repr (v i) j = if i = j then 1 else 0 :=
-by rw [hv.repr_eq_single, finsupp.single_apply]
-
-lemma is_basis.repr_eq_iff {f : M →ₗ[R] (ι →₀ R)} :
-  hv.repr = f ↔ ∀ i, f (v i) = finsupp.single i 1 :=
-begin
-  split,
-  { rintros rfl i,
-    exact hv.repr_eq_single },
-  intro h,
-  refine hv.ext (λ _, _),
-  rw [h, hv.repr_eq_single]
-end
-
-lemma is_basis.repr_apply_eq {f : M → ι → R}
-  (hadd : ∀ x y, f (x + y) = f x + f y) (hsmul : ∀ (c : R) (x : M), f (c • x) = c • f x)
-  (f_eq : ∀ i, f (v i) = finsupp.single i 1) (x : M) (i : ι) :
-  hv.repr x i = f x i :=
-begin
-  let f_i : M →ₗ[R] R :=
-  { to_fun := λ x, f x i,
-    map_add' := λ _ _, by rw [hadd, pi.add_apply],
-    map_smul' := λ _ _, by rw [hsmul, pi.smul_apply] },
-  show (finsupp.lapply i).comp hv.repr x = f_i x,
-  congr' 1,
-  refine hv.ext (λ j, _),
-  show hv.repr (v j) i = f (v j) i,
-  rw [hv.repr_eq_single, f_eq]
-end
 
 lemma is_basis.range_repr_self (i : ι) :
   hv.range.repr (v i) = finsupp.single ⟨v i, mem_range_self i⟩ 1 :=

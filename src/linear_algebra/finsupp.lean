@@ -520,9 +520,21 @@ protected def dom_lcongr {α₁ α₂ : Type*} (e : α₁ ≃ α₂) :
   (α₁ →₀ M) ≃ₗ[R] (α₂ →₀ M) :=
 (finsupp.dom_congr e : (α₁ →₀ M) ≃+ (α₂ →₀ M)).to_linear_equiv (lmap_domain M R e).map_smul
 
+lemma dom_lcongr_apply {α₁ : Type*} {α₂ : Type*} (e : α₁ ≃ α₂) (v : α₁ →₀ M) (i : α₂) :
+  (finsupp.dom_lcongr e : _ ≃ₗ[R] _) v i = v (e.symm i) :=
+by { conv_lhs { rw ← e.apply_symm_apply i },
+     exact finsupp.map_domain_apply e.injective v (e.symm i) }
+
 @[simp] theorem dom_lcongr_single {α₁ : Type*} {α₂ : Type*} (e : α₁ ≃ α₂) (i : α₁) (m : M) :
   (finsupp.dom_lcongr e : _ ≃ₗ[R] _) (finsupp.single i m) = finsupp.single (e i) m :=
 by simp [finsupp.dom_lcongr, finsupp.dom_congr, map_domain_single]
+
+@[simp] lemma dom_lcongr_symm {α₁ : Type*} {α₂ : Type*} (e : α₁ ≃ α₂) :
+  (finsupp.dom_lcongr e : (α₁ →₀ M) ≃ₗ[R] _).symm = finsupp.dom_lcongr e.symm :=
+by { ext v i,
+     rw [dom_lcongr_apply, e.symm_symm],
+     conv_lhs { rw ← e.symm_apply_apply i },
+     exact finsupp.map_domain_apply e.symm.injective v (e i) }
 
 /-- An equivalence of sets induces a linear equivalence of `finsupp`s supported on those sets. -/
 noncomputable def congr {α' : Type*} (s : set α) (t : set α') (e : s ≃ t) :
