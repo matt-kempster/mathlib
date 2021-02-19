@@ -175,6 +175,8 @@ e.left_inv' h
 
 protected lemma left_inv_on : left_inv_on e.symm e e.source := λ _, e.left_inv
 
+protected lemma inj_on : inj_on e e.source := e.left_inv_on.inj_on
+
 @[simp, mfld_simps] lemma right_inv {x : β} (h : x ∈ e.target) : e (e.symm x) = x :=
 e.right_inv' h
 

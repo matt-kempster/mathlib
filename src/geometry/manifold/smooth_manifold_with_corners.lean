@@ -205,14 +205,19 @@ end
 by { rw [← image_univ, ← I.source_eq], exact (I.to_local_equiv.image_source_eq_target).symm }
 
 @[simp, mfld_simps] lemma model_with_corners.left_inv (x : H) : I.symm (I x) = x :=
-by { convert I.left_inv' _, simp }
+by { refine I.left_inv' _, simp }
 
-@[simp, mfld_simps] lemma model_with_corners.left_inv' : I.symm ∘ I = id :=
-by { ext x, exact model_with_corners.left_inv _ _ }
+protected lemma model_with_corners.left_inverse : function.left_inverse I.symm I := I.left_inv
+
+@[simp, mfld_simps] lemma model_with_corners.symm_comp_self : I.symm ∘ I = id :=
+I.left_inverse.comp_eq_id
+
+protected lemma model_with_corners.right_inv_on : right_inv_on I.symm I (range I) :=
+I.left_inverse.right_inv_on_range
 
 @[simp, mfld_simps] lemma model_with_corners.right_inv {x : E} (hx : x ∈ range I) :
   I (I.symm x) = x :=
-by { apply I.right_inv', rwa I.target_eq }
+I.right_inv_on hx
 
 lemma model_with_corners.image (s : set H) :
   I '' s = I.symm ⁻¹' s ∩ range I :=
@@ -223,24 +228,21 @@ begin
 end
 
 lemma model_with_corners.map_nhds_eq (x : H) : map I (𝓝 x) = 𝓝[range I] (I x) :=
-begin
-  refine le_antisymm (tendsto_nhds_within_range.2 I.continuous.continuous_at) _,
-  have : I ∘ I.symm =ᶠ[𝓝[range ⇑I] I x] id,
-    from (eq_on.eventually_eq (λ x, I.right_inv)).filter_mono inf_le_right,
-  refine le_map_of_right_inverse this _,
-  exact (I.continuous_symm.tendsto' _ _ (I.left_inv x)).mono_left inf_le_left
-end
+I.left_inverse.map_nhds_eq I.continuous_symm.continuous_within_at I.continuous.continuous_at
 
 lemma model_with_corners.image_mem_nhds_within {x : H} {s : set H} (hs : s ∈ 𝓝 x) :
   I '' s ∈ 𝓝[range I] (I x) :=
 I.map_nhds_eq x ▸ image_mem_map hs
 
-lemma model_with_corners.is_closed_range : is_closed (range I) :=
-have eq_on (I ∘ I.symm) id (closure $ range I),
-  from eq_on.closure (λ x hx, I.right_inv hx) (I.continuous.comp I.continuous_symm) continuous_id,
-is_closed_of_closure_subset $ λ x hx,
-calc x = I (I.symm x) : (this hx).symm
-   ... ∈ range I : mem_range_self _
+lemma model_with_corners.symm_map_nhds_within_range (x : H) :
+  map I.symm (𝓝[range I] (I x)) = 𝓝 x :=
+by rw [← I.map_nhds_eq, map_map, I.symm_comp_self, map_id]
+
+protected lemma model_with_corners.closed_embedding : closed_embedding I :=
+I.left_inverse.closed_embedding I.continuous_symm I.continuous
+
+lemma model_with_corners.closed_range : is_closed (range I) :=
+I.closed_embedding.closed_range
 
 lemma model_with_corners.unique_diff_preimage {s : set H} (hs : is_open s) :
   unique_diff_on 𝕜 (I.symm ⁻¹' s ∩ range I) :=
@@ -252,6 +254,22 @@ I.unique_diff_preimage e.open_source
 
 lemma model_with_corners.unique_diff_at_image {x : H} : unique_diff_within_at 𝕜 (range I) (I x) :=
 I.unique_diff _ (mem_range_self _)
+
+lemma model_with_corners.locally_compact [locally_compact_space E] (I : model_with_corners 𝕜 E H) :
+  locally_compact_space H :=
+begin
+  refine ⟨λ x s hs, _⟩,
+  have : I '' s ∈ 𝓝[range I] (I x), from I.image_mem_nhds_within hs,
+  rcases locally_compact_space.local_compact_nhds _ _ (mem_inf_principal.1 this)
+    with ⟨K, hKx, hKs, hKc⟩,
+  refine ⟨I.symm '' (range I ∩ K), _, _, _⟩,
+  { rw ← I.symm_map_nhds_within_range,
+    exact image_mem_map (inter_mem_nhds_within _ hKx) },
+  { rintro _ ⟨y, ⟨hyI, hyK⟩, rfl⟩,
+    rcases hKs hyK hyI with ⟨x', hx's, rfl⟩,
+    rwa I.left_inv },
+  { exact (hKc.inter_left I.closed_range).image I.continuous_symm }
+end
 
 end
 

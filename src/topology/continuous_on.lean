@@ -407,6 +407,14 @@ theorem nhds_within_le_comap {x : α} {s : set α} {f : α → β} (ctsf : conti
   𝓝[s] x ≤ comap f (𝓝[f '' s] (f x)) :=
 map_le_iff_le_comap.1 ctsf.tendsto_nhds_within_image
 
+lemma function.left_inverse.map_nhds_eq {f : α → β} {g : β → α} {x : β}
+  (h : function.left_inverse f g) (hf : continuous_within_at f (range g) (g x))
+  (hg : continuous_at g x) :
+  map g (𝓝 x) = 𝓝[range g] (g x) :=
+le_antisymm (tendsto_nhds_within_range.2 hg) $
+  le_map_of_right_inverse (h.right_inv_on_range.eq_on.eventually_eq.filter_mono inf_le_right) $
+    by { convert hf.tendsto, exact (h x).symm }
+
 theorem continuous_within_at_iff_ptendsto_res (f : α → β) {x : α} {s : set α} :
   continuous_within_at f s x ↔ ptendsto (pfun.res f s) (𝓝 x) (𝓝 (f x)) :=
 tendsto_iff_ptendsto _ _ _ _
