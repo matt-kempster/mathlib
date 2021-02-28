@@ -8,13 +8,23 @@ import geometry.manifold.times_cont_mdiff
 
 variables
 {E : Type*} [normed_group E] [normed_space ℝ E] [finite_dimensional ℝ E]
+{F : Type*} [inner_product_space ℝ F]
 {H : Type*} [topological_space H]
-(I : model_with_corners ℝ E H)
+(IE : model_with_corners ℝ E H) (IF : model_with_corners ℝ F H)
 {M : Type*} [topological_space M] [t2_space M] [charted_space H M]
-  [smooth_manifold_with_corners I M]
+  [smooth_manifold_with_corners IE M] [smooth_manifold_with_corners IF M]
 
 open function set metric filter
 open_locale topological_space manifold classical filter
+
+section inner_product_space
+
+def msmooth_bump_function {x : M} {r R : ℝ} (h0 : 0 < r) (hrR : r < R)
+  (hR : closed_ball (ext_chart_at IF x x) R ∩ range (ext_chart_at IF x) ⊆
+    (ext_chart_at IF x).target) :
+  M → ℝ :=
+indicator (ext_chart_at IF x).source _
+  
 
 lemma exists_smooth_bump_function {x : M} {s : set M} (hs : s ∈ 𝓝 x) :
   ∃ f : M → ℝ, f =ᶠ[𝓝 x] 1 ∧ (∀ y, f y ∈ Icc (0 : ℝ) 1) ∧ smooth I 𝓘(ℝ) f ∧
