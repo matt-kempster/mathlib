@@ -10,6 +10,7 @@ topological spaces. For example:
   open and closed sets, compactness, completeness, continuity and uniform continuity
 -/
 import topology.metric_space.emetric_space
+import topology.shrinking_lemma
 import topology.algebra.ordered
 import data.fintype.intervals
 
@@ -332,6 +333,10 @@ theorem ball_subset_ball (h : ε₁ ≤ ε₂) : ball x ε₁ ⊆ ball x ε₂ :
 theorem closed_ball_subset_closed_ball (h : ε₁ ≤ ε₂) :
   closed_ball x ε₁ ⊆ closed_ball x ε₂ :=
 λ y (yx : _ ≤ ε₁), le_trans yx h
+
+theorem closed_ball_subset_ball (h : ε₁ < ε₂) :
+  closed_ball x ε₁ ⊆ ball x ε₂ :=
+λ y (yh : dist y x ≤ ε₁), lt_of_le_of_lt yh h
 
 theorem ball_disjoint (h : ε₁ + ε₂ ≤ dist x y) : ball x ε₁ ∩ ball y ε₂ = ∅ :=
 eq_empty_iff_forall_not_mem.2 $ λ z ⟨h₁, h₂⟩,
@@ -1371,6 +1376,81 @@ begin
   apply compact_pi_infinite (λb, _),
   apply (h b).compact_ball
 end
+
+variables [proper_space α] {x : α} {r : ℝ} {s : set α}
+
+/-- If a nonempty ball in a proper space includes a closed set `s`, then there exists a nonempty
+ball with the same center and a strictly smaller radius that includes `s`. -/
+lemma exists_pos_lt_subset_ball (hr : 0 < r) (hs : is_closed s) (h : s ⊆ ball x r) :
+  ∃ r' ∈ Ioo 0 r, s ⊆ ball x r' :=
+begin
+  rcases eq_empty_or_nonempty s with rfl|hne,
+  { exact ⟨r / 2, ⟨half_pos hr, half_lt_self hr⟩, empty_subset _⟩ },
+  have : is_compact s,
+    from compact_of_is_closed_subset (proper_space.compact_ball x r) hs
+      (subset.trans h ball_subset_closed_ball),
+  obtain ⟨y, hys, hy⟩ : ∃ y ∈ s, s ⊆ closed_ball x (dist y x),
+    from this.exists_forall_ge hne (continuous_id.dist continuous_const).continuous_on,
+  have hyr : dist y x < r, from h hys,
+  rcases exists_between hyr with ⟨r', hyr', hrr'⟩,
+  exact ⟨r', ⟨dist_nonneg.trans_lt hyr', hrr'⟩, subset.trans hy $ closed_ball_subset_ball hyr'⟩
+end
+
+/-- If a ball in a proper space includes a closed set `s`, then there exists a ball with the same
+center and a strictly smaller radius that includes `s`. -/
+lemma exists_lt_subset_ball (hs : is_closed s) (h : s ⊆ ball x r) :
+  ∃ r' < r, s ⊆ ball x r' :=
+begin
+  cases le_or_lt r 0 with hr hr,
+  { rw [ball_eq_empty_iff_nonpos.2 hr, subset_empty_iff] at h, subst s,
+    exact (no_bot r).imp (λ r' hr', ⟨hr', empty_subset _⟩) },
+  { exact (exists_pos_lt_subset_ball hr hs h).imp (λ r' hr', ⟨hr'.fst.2, hr'.snd⟩) }
+end
+
+variables {ι : Type*} {c : ι → α}
+
+/-- A point-finite open cover of a closed subset of a proper metric space by open balls to a new
+cover by open balls so that each of the new balls has strictly smaller radius than the old one. -/
+lemma exists_subset_Union_ball_radius_lt {r : ι → ℝ} (hs : is_closed s)
+  (uf : ∀ x ∈ s, finite {i | x ∈ ball (c i) (r i)}) (us : s ⊆ ⋃ i, ball (c i) (r i)) :
+  ∃ r' : ι → ℝ, s ⊆ (⋃ i, ball (c i) (r' i)) ∧ ∀ i, r' i < r i :=
+begin
+  choose v hsv hvo hcv
+    using exists_subset_Union_closure_subset hs (λ i, @is_open_ball _ _ (c i) (r i)) uf us,
+  have := λ i, exists_lt_subset_ball is_closed_closure (hcv i),
+  choose r' hlt hsub,
+  exact ⟨r', subset.trans hsv $ Union_subset_Union $ λ i, subset.trans subset_closure (hsub i), hlt⟩
+end
+
+/-- A point-finite open cover of a proper metric space by open balls to a new cover by open balls so
+that each of the new balls has strictly smaller radius than the old one. -/
+lemma exists_Union_ball_eq_radius_lt {r : ι → ℝ} (uf : ∀ x, finite {i | x ∈ ball (c i) (r i)})
+  (uU : (⋃ i, ball (c i) (r i)) = univ) :
+  ∃ r' : ι → ℝ, (⋃ i, ball (c i) (r' i)) = univ ∧ ∀ i, r' i < r i :=
+let ⟨r', hU, hv⟩ := exists_subset_Union_ball_radius_lt is_closed_univ (λ x _, uf x) uU.ge
+in ⟨r', univ_subset_iff.1 hU, hv⟩
+
+/-- A point-finite open cover of a closed subset of a proper metric space by nonempty open balls
+to a new cover by nonempty open balls so that each of the new balls has strictly smaller radius
+than the old one. -/
+lemma exists_subset_Union_ball_radius_pos_lt {r : ι → ℝ} (hr : ∀ i, 0 < r i) (hs : is_closed s)
+  (uf : ∀ x ∈ s, finite {i | x ∈ ball (c i) (r i)}) (us : s ⊆ ⋃ i, ball (c i) (r i)) :
+  ∃ r' : ι → ℝ, s ⊆ (⋃ i, ball (c i) (r' i)) ∧ ∀ i, r' i ∈ Ioo 0 (r i) :=
+begin
+  choose v hsv hvo hcv
+    using exists_subset_Union_closure_subset hs (λ i, @is_open_ball _ _ (c i) (r i)) uf us,
+  have := λ i, exists_pos_lt_subset_ball (hr i) is_closed_closure (hcv i),
+  choose r' hlt hsub,
+  exact ⟨r', subset.trans hsv $ Union_subset_Union $ λ i, subset.trans subset_closure (hsub i), hlt⟩
+end
+
+/-- A point-finite open cover of a proper metric space by nonempty open balls to a new cover by
+nonempty open balls so that each of the new balls has strictly smaller radius than the old one. -/
+lemma exists_Union_ball_eq_radius_pos_lt {r : ι → ℝ} (hr : ∀ i, 0 < r i)
+  (uf : ∀ x, finite {i | x ∈ ball (c i) (r i)}) (uU : (⋃ i, ball (c i) (r i)) = univ) :
+  ∃ r' : ι → ℝ, (⋃ i, ball (c i) (r' i)) = univ ∧ ∀ i, r' i ∈ Ioo 0 (r i) :=
+let ⟨r', hU, hv⟩ := exists_subset_Union_ball_radius_pos_lt hr is_closed_univ (λ x _, uf x) uU.ge
+in ⟨r', univ_subset_iff.1 hU, hv⟩
 
 end proper_space
 

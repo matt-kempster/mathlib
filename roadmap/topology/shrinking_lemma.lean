@@ -13,8 +13,7 @@ A formal roadmap for the shrinking lemma for local finite countable covers.
 It contains the statement of the lemma, and an informal sketch of the proof,
 along with references.
 
-Any contributor should feel welcome to contribute a formal proof. When this happens,
-we should also consider preserving the current file as an exemplar of a formal roadmap.
+The lemma is now formalized as `exists_subset_Union_closure_subset` in `topology/shrinking_lemma`.
 -/
 
 open set
