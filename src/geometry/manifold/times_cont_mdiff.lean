@@ -314,9 +314,10 @@ end
 
 omit I's
 
-lemma times_cont_mdiff_at_ext_chart_at' {x' : M} (h : x' ∈ (chart_at H x).source) :
+lemma times_cont_mdiff_at_ext_chart_at' {x' : M} (h : x' ∈ (ext_chart_at I x).source) :
   times_cont_mdiff_at I 𝓘(𝕜, E) n (ext_chart_at I x) x' :=
 begin
+  rw ext_chart_at_source at h,
   refine (times_cont_mdiff_within_at_iff' h (mem_chart_source _ _)).2 _,
   refine ⟨(ext_chart_at_continuous_at' _ _ _).continuous_within_at, _⟩,
   { rwa ext_chart_at_source },
@@ -634,7 +635,7 @@ begin
         (structure_groupoid.chart_mem_maximal_atlas _ x) (v_incl hy)
         (structure_groupoid.chart_mem_maximal_atlas _ (f x)) (v_incl' y hy))).2,
       split,
-      { apply (((ext_chart_at_continuous_on_symm I' (f x) _ _).comp'
+      { apply (((ext_chart_continuous_on_symm I' (f x) _ _).comp'
           (hu _ hy.2).continuous_within_at).comp' (ext_chart_at_continuous_on I x _ _)).congr_mono,
         { assume z hz,
           simp only [v_incl hz, v_incl' z hz] with mfld_simps },

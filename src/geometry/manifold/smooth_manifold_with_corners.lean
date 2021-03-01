@@ -673,13 +673,6 @@ lemma ext_chart_at_continuous_at' {x' : M} (h : x' ∈ (ext_chart_at I x).source
 lemma ext_chart_at_continuous_at : continuous_at (ext_chart_at I x) x :=
 ext_chart_at_continuous_at' _ _ (mem_ext_chart_source I x)
 
-lemma ext_chart_at_continuous_on_symm :
-  continuous_on (ext_chart_at I x).symm (ext_chart_at I x).target :=
-begin
-  apply continuous_on.comp (chart_at H x).continuous_on_symm I.continuous_symm.continuous_on,
-  simp [ext_chart_at, local_equiv.trans_target]
-end
-
 lemma ext_chart_at_map_nhds' {x y : M} (hy : y ∈ (ext_chart_at I x).source) :
   map (ext_chart_at I x) (𝓝 y) = 𝓝[range I] (ext_chart_at I x y) :=
 begin
@@ -729,6 +722,17 @@ ext_chart_continuous_at_symm' I x (mem_ext_chart_source I x)
 lemma ext_chart_continuous_on_symm :
   continuous_on (ext_chart_at I x).symm (ext_chart_at I x).target :=
 λ y hy, (ext_chart_continuous_at_symm'' _ _ hy).continuous_within_at
+
+lemma ext_chart_preimage_open_of_open {s : set E} (hs : is_open s) :
+  is_open ((ext_chart_at I x).source ∩ ext_chart_at I x ⁻¹' s) :=
+(ext_chart_at_continuous_on I x).preimage_open_of_open (ext_chart_at_open_source _ _) hs
+
+/-- An auxiliary lemma used to prove properties of `msmooth_bump_function`. -/
+lemma compact_ext_chart_symm_image_closed_ball [proper_space E] {r : ℝ}
+  (hr : metric.closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target) :
+  is_compact ((ext_chart_at I x).symm '' (metric.closed_ball (ext_chart_at I x x) r ∩ range I)) :=
+((proper_space.compact_ball _ _).inter_right I.closed_range).image_of_continuous_on $
+  (ext_chart_continuous_on_symm _ _).mono hr
 
 /-- Technical lemma ensuring that the preimage under an extended chart of a neighborhood of a point
 in the source is a neighborhood of the preimage, within a set. -/

@@ -29,6 +29,9 @@ lemma nmem_support [has_zero A] {f : α → A} {x : α} :
   x ∉ support f ↔ f x = 0 :=
 not_not
 
+lemma compl_support [has_zero A] {f : α → A} : (support f)ᶜ = {x | f x = 0} :=
+ext $ λ x, nmem_support
+
 lemma mem_support [has_zero A] {f : α → A} {x : α} :
   x ∈ support f ↔ f x ≠ 0 :=
 iff.rfl
