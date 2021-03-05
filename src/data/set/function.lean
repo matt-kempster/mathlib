@@ -634,12 +634,10 @@ begin
 end
 
 @[simp, priority 990]
-lemma piecewise_eq_of_mem {i : α} (hi : i ∈ s) : s.piecewise f g i = f i :=
-by simp [piecewise, hi]
+lemma piecewise_eq_of_mem {i : α} (hi : i ∈ s) : s.piecewise f g i = f i := if_pos hi
 
 @[simp, priority 990]
-lemma piecewise_eq_of_not_mem {i : α} (hi : i ∉ s) : s.piecewise f g i = g i :=
-by simp [piecewise, hi]
+lemma piecewise_eq_of_not_mem {i : α} (hi : i ∉ s) : s.piecewise f g i = g i := if_neg hi
 
 lemma piecewise_singleton (x : α) [Π y, decidable (y ∈ ({x} : set α))] [decidable_eq α]
   (f g : α → β) : piecewise {x} f g = function.update g x (f x) :=
