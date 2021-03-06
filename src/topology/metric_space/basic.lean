@@ -407,7 +407,13 @@ metric.mk_uniformity_basis (λ n _, div_pos zero_lt_one $ nat.cast_add_one_pos n
 theorem uniformity_basis_dist_inv_nat_pos :
   (𝓤 α).has_basis (λ n:ℕ, 0<n) (λ n:ℕ, {p:α×α | dist p.1 p.2 < 1 / ↑n }) :=
 metric.mk_uniformity_basis (λ n hn, div_pos zero_lt_one $ nat.cast_pos.2 hn)
-  (λ ε ε0, let ⟨n, hn⟩ := exists_nat_one_div_lt ε0 in ⟨n+1, nat.succ_pos n, le_of_lt hn⟩)
+  (λ ε ε0, let ⟨n, hn⟩ := exists_nat_one_div_lt ε0 in ⟨n+1, nat.succ_pos n, hn.le⟩)
+
+theorem uniformity_basis_dist_lt {R : ℝ} (hR : 0 < R) :
+  (𝓤 α).has_basis (λ r : ℝ, 0 < r ∧ r < R) (λ r, {p : α × α | dist p.1 p.2 < r}) :=
+metric.mk_uniformity_basis (λ r, and.left) $ λ r hr,
+  ⟨min r (R / 2), ⟨lt_min hr (half_pos hR), min_lt_iff.2 $ or.inr (half_lt_self hR)⟩,
+    min_le_left _ _⟩
 
 /-- Given `f : β → ℝ`, if `f` sends `{i | p i}` to a set of positive numbers
 accumulating to zero, then closed neighborhoods of the diagonal of sizes `{f i | p i}`
@@ -1410,7 +1416,9 @@ end
 variables {ι : Type*} {c : ι → α}
 
 /-- A point-finite open cover of a closed subset of a proper metric space by open balls to a new
-cover by open balls so that each of the new balls has strictly smaller radius than the old one. -/
+cover by open balls so that each of the new balls has strictly smaller radius than the old one.
+This version assumes that `λ x, ball (c i) (r i)` is a locally finite covering and provides
+a covering indexed by the same type. -/
 lemma exists_subset_Union_ball_radius_lt {r : ι → ℝ} (hs : is_closed s)
   (uf : ∀ x ∈ s, finite {i | x ∈ ball (c i) (r i)}) (us : s ⊆ ⋃ i, ball (c i) (r i)) :
   ∃ r' : ι → ℝ, s ⊆ (⋃ i, ball (c i) (r' i)) ∧ ∀ i, r' i < r i :=
@@ -1451,6 +1459,48 @@ lemma exists_Union_ball_eq_radius_pos_lt {r : ι → ℝ} (hr : ∀ i, 0 < r i)
   ∃ r' : ι → ℝ, (⋃ i, ball (c i) (r' i)) = univ ∧ ∀ i, r' i ∈ Ioo 0 (r i) :=
 let ⟨r', hU, hv⟩ := exists_subset_Union_ball_radius_pos_lt hr is_closed_univ (λ x _, uf x) uU.ge
 in ⟨r', univ_subset_iff.1 hU, hv⟩
+
+/-- Let `R : α → ℝ` be a (possibly discontinuous) function that is positive on a closed set `s`.
+Then there exists a collection of pairs of balls `metric.ball (c i) (r i)`,
+`metric.ball (c i) (r' i)` such that
+
+* all centers belong to `s`;
+* for all `i` we have `0 < r i < r' i < R (c i)`;
+* the family of balls `metric.ball (c i) (r' i)` is locally finite;
+* the balls `metric.ball (c i) (r i)` cover `s`.
+
+This is a simple corollary of `refinement_of_locally_compact_sigma_compact_of_nhds_basis_set`
+and `exists_subset_Union_ball_radius_pos_lt`. -/
+lemma exists_locally_finite_subset_Union_ball_radius_lt (hs : is_closed s)
+  {R : α → ℝ} (hR : ∀ x ∈ s, 0 < R x) :
+  ∃ (ι : Type u) (c : ι → α) (r r' : ι → ℝ),
+    (∀ i, c i ∈ s ∧ 0 < r i ∧ r i < r' i ∧ r' i < R (c i)) ∧
+    locally_finite (λ i, ball (c i) (r' i)) ∧ s ⊆ ⋃ i, ball (c i) (r i) :=
+begin
+  have : ∀ x ∈ s, (𝓝 x).has_basis (λ r : ℝ, 0 < r ∧ r < R x) (λ r, ball x r),
+    from λ x hx, nhds_basis_uniformity (uniformity_basis_dist_lt (hR x hx)),
+  rcases refinement_of_locally_compact_sigma_compact_of_nhds_basis_set hs this
+    with ⟨ι, c, r', hr', hsub', hfin⟩,
+  rcases exists_subset_Union_ball_radius_pos_lt (λ i, (hr' i).2.1) hs
+    (λ x hx, hfin.point_finite x) hsub' with ⟨r, hsub, hlt⟩,
+  exact ⟨ι, c, r, r', λ i, ⟨(hr' i).1, (hlt i).1, (hlt i).2, (hr' i).2.2⟩, hfin, hsub⟩
+end
+
+/-- Let `R : α → ℝ` be a (possibly discontinuous) positive function. Then there exists a collection
+of pairs of balls `metric.ball (c i) (r i)`, `metric.ball (c i) (r' i)` such that
+
+* for all `i` we have `0 < r i < r' i < R (c i)`;
+* the family of balls `metric.ball (c i) (r' i)` is locally finite;
+* the balls `metric.ball (c i) (r i)` cover the whole space.
+
+This is a simple corollary of `refinement_of_locally_compact_sigma_compact_of_nhds_basis`
+and `exists_Union_ball_eq_radius_pos_lt` or `exists_locally_finite_subset_Union_ball_radius_lt`. -/
+lemma exists_locally_finite_Union_eq_ball_radius_lt {R : α → ℝ} (hR : ∀ x, 0 < R x) :
+  ∃ (ι : Type u) (c : ι → α) (r r' : ι → ℝ), (∀ i, 0 < r i ∧ r i < r' i ∧ r' i < R (c i)) ∧
+    locally_finite (λ i, ball (c i) (r' i)) ∧ (⋃ i, ball (c i) (r i)) = univ :=
+let ⟨ι, c, r, r', hlt, hfin, hsub⟩ := exists_locally_finite_subset_Union_ball_radius_lt
+  is_closed_univ (λ x _, hR x)
+in ⟨ι, c, r, r', λ i, (hlt i).2, hfin, univ_subset_iff.1 hsub⟩
 
 end proper_space
 
