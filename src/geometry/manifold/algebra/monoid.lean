@@ -18,23 +18,50 @@ semigroups.
 
 section
 
+set_option old_structure_cmd true
+
+/--
+1. All smooth algebraic structures on `G` are `Prop`-valued classes that extend
+`smooth_manifold_with_corners I G`. This way we save users from adding both
+`[smooth_manifold_with_corners I G]` and `[has_smooth_mul I G]` to the assumptions. While many API
+lemmas hold true without the `smooth_manifold_with_corners I G` assumption, we're not aware of a
+mathematically interesting monoid on a topological manifold such that (a) the space is not a
+`smooth_manifold_with_corners`; (b) the multiplication is smooth at `(a, b)` in the charts
+`ext_chart_at I a`, `ext_chart_at I b`, `ext_chart_at I (a * b)`.
+
+2. Because of `model_prod` we can't assume, e.g., that a `lie_group` is modelled on `𝓘(𝕜, E)`. So,
+we formulate the definitions and lemmas for any model.
+
+3. While smoothness of an operation implies its continuity, lemmas like
+`has_continuous_mul_of_smooth` can't be instances becausen otherwise Lean would have to search for
+`has_smooth_mul I G` with unknown `𝕜`, `E`, `H`, and
+`I : model_with_corners 𝕜 E H`. If users needs `[has_continuous_mul G]` in a proof about a smooth
+monoid, then they need to either add `[has_continuous_mul G]` as an assumption (worse) or use `letI`
+in the proof (better). -/
+library_note "Design choices about smooth algebraic structures"
+
 /-- Basic hypothesis to talk about a smooth (Lie) additive monoid or a smooth additive
 semigroup. A smooth additive monoid over `α`, for example, is obtained by requiring both the
 instances `add_monoid α` and `has_smooth_add α`. -/
+-- See note [Design choices about smooth algebraic structures]
+@[ancestor smooth_manifold_with_corners]
 class has_smooth_add {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   {H : Type*} [topological_space H]
   {E : Type*} [normed_group E] [normed_space 𝕜 E] (I : model_with_corners 𝕜 E H)
-  (G : Type*) [has_add G] [topological_space G] [charted_space H G] : Prop :=
+  (G : Type*) [has_add G] [topological_space G] [charted_space H G]
+  extends smooth_manifold_with_corners I G : Prop :=
 (smooth_add : smooth (I.prod I) I (λ p : G×G, p.1 + p.2))
 
 /-- Basic hypothesis to talk about a smooth (Lie) monoid or a smooth semigroup.
 A smooth monoid over `G`, for example, is obtained by requiring both the instances `monoid G`
 and `has_smooth_mul I G`. -/
-@[to_additive]
+-- See note [Design choices about smooth algebraic structures]
+@[ancestor smooth_manifold_with_corners, to_additive]
 class has_smooth_mul {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   {H : Type*} [topological_space H]
   {E : Type*} [normed_group E] [normed_space 𝕜 E] (I : model_with_corners 𝕜 E H)
-  (G : Type*) [has_mul G] [topological_space G] [charted_space H G] : Prop :=
+  (G : Type*) [has_mul G] [topological_space G] [charted_space H G]
+  extends smooth_manifold_with_corners I G : Prop :=
 (smooth_mul : smooth (I.prod I) I (λ p : G×G, p.1 * p.2))
 
 end
@@ -57,9 +84,13 @@ variables (I)
 lemma smooth_mul : smooth (I.prod I) I (λ p : G×G, p.1 * p.2) :=
 has_smooth_mul.smooth_mul
 
-@[to_additive]
+/-- If the multiplication is smooth, then it is continuous. This is not an instance for technical
+reasons, see note [Design choices about smooth algebraic structures]. -/
+@[to_additive
+"If the addition is smooth, then it is continuous. This is not an instance for technical reasons,
+see note [Design choices about smooth algebraic structures]."]
 lemma has_continuous_mul_of_smooth : has_continuous_mul G :=
-⟨(smooth_mul I).continuous⟩ 
+⟨(smooth_mul I).continuous⟩
 
 end
 
@@ -95,7 +126,8 @@ instance has_smooth_mul.prod {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   [has_mul G'] [has_smooth_mul I' G'] :
   has_smooth_mul (I.prod I') (G×G') :=
 { smooth_mul := ((smooth_fst.comp smooth_fst).smooth.mul (smooth_fst.comp smooth_snd)).prod_mk
-    ((smooth_snd.comp smooth_fst).smooth.mul (smooth_snd.comp smooth_snd)) }
+    ((smooth_snd.comp smooth_fst).smooth.mul (smooth_snd.comp smooth_snd)),
+  .. smooth_manifold_with_corners.prod G G' }
 
 variable (I)
 

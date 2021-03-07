@@ -26,6 +26,7 @@ groups here are not necessarily finite dimensional.
                                  is an additive Lie group.
 
 ## Implementation notes
+A priori, a Lie group here is a manifold with corners.
 
 The definition of Lie group cannot require `I : model_with_corners 𝕜 E E` with the same space as the
 model space and as the model vector space, as one might hope, beause in the product situation,
@@ -36,11 +37,14 @@ so the definition does not apply. Hence the definition should be more general, a
 
 noncomputable theory
 
+open_locale manifold
+
 section
 set_option old_structure_cmd true
 
 /-- A Lie (additive) group is a group and a smooth manifold at the same time in which
 the addition and negation operations are smooth. -/
+-- See note [Design choices about smooth algebraic structures]
 @[ancestor has_smooth_add]
 class lie_add_group {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   {H : Type*} [topological_space H]
@@ -51,6 +55,7 @@ class lie_add_group {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
 
 /-- A Lie group is a group and a smooth manifold at the same time in which
 the multiplication and inverse operations are smooth. -/
+-- See note [Design choices about smooth algebraic structures]
 @[ancestor has_smooth_mul, to_additive]
 class lie_group {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   {H : Type*} [topological_space H]
@@ -91,7 +96,11 @@ variable (I)
 lemma smooth_inv : smooth I I (λ x : G, x⁻¹) :=
 lie_group.smooth_inv
 
-@[to_additive]
+/-- A Lie group is a topological group. This is not an instance for technical reasons,
+see note [Design choices about smooth algebraic structures]. -/
+@[to_additive
+"An additive Lie group is an additive topological group. This is not an instance for technical
+reasons, see note [Design choices about smooth algebraic structures]."]
 lemma topological_group_of_lie_group : topological_group G :=
 { continuous_inv := (smooth_inv I).continuous,
   .. has_continuous_mul_of_smooth I }
@@ -131,6 +140,7 @@ end prod_lie_group
 
 instance normed_space_lie_add_group {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
   {E : Type*} [normed_group E] [normed_space 𝕜 E] :
-  lie_add_group (model_with_corners_self 𝕜 E) E :=
+  lie_add_group (𝓘(𝕜, E)) E :=
 { smooth_add := smooth_iff.2 ⟨continuous_add, λ x y, times_cont_diff_add.times_cont_diff_on⟩,
-  smooth_neg := smooth_iff.2 ⟨continuous_neg, λ x y, times_cont_diff_neg.times_cont_diff_on⟩ }
+  smooth_neg := smooth_iff.2 ⟨continuous_neg, λ x y, times_cont_diff_neg.times_cont_diff_on⟩,
+  .. model_space_smooth }
