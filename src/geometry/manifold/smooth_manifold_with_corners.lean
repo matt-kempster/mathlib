@@ -819,6 +819,37 @@ begin
   rwa (ext_chart_at I x).left_inv (mem_ext_chart_source _ _)
 end
 
+open metric
+
+lemma nhds_basis_ext_chart_symm_image_closed_ball :
+  (𝓝 x).has_basis
+    (λ r : ℝ, 0 < r ∧ closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target)
+    (λ r, (ext_chart_at I x).symm '' (closed_ball (ext_chart_at I x x) r ∩ range I)) :=
+begin
+  rw ← ext_chart_at_symm_map_nhds_within_range I x,
+  exact ((nhds_within_has_basis nhds_basis_closed_ball _).restrict_subset
+    (ext_chart_at_target_mem_nhds_within _ _)).map _
+end
+
+lemma nhds_basis_ext_chart_symm_image_ball_subset {s : set M} (hs : s ∈ 𝓝 x) :
+  (𝓝 x).has_basis
+    (λ r : ℝ, 0 < r ∧ closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target ∧
+      (ext_chart_at I x).symm '' (closed_ball (ext_chart_at I x x) r ∩ range I) ⊆ s)
+    (λ r, (ext_chart_at I x).symm '' (ball (ext_chart_at I x x) r ∩ range I)) :=
+begin
+  set e := ext_chart_at I x,
+  refine ((nhds_basis_ext_chart_symm_image_closed_ball I x).restrict_subset hs).to_has_basis _ _,
+  { rintro r ⟨⟨hr0, hI⟩, hs⟩,
+    exact ⟨r, ⟨hr0, hI, hs⟩, image_subset _ (inter_subset_inter_left _ ball_subset_closed_ball)⟩ },
+  { rintro r ⟨hr0, hI, hs⟩,
+    have sub : closed_ball (e x) (r / 2) ∩ range I ⊆ ball (e x) r ∩ range I,
+      from inter_subset_inter_left _ (closed_ball_subset_ball (half_lt_self hr0)),
+    have sub' : closed_ball (e x) (r / 2) ∩ range I ⊆ closed_ball (e x) r ∩ range I,
+      from subset.trans sub (inter_subset_inter_left _ ball_subset_closed_ball),
+    exact ⟨r / 2, ⟨⟨half_pos hr0, subset.trans sub' hI⟩, subset.trans (image_subset _ sub') hs⟩,
+      image_subset _ sub⟩ }
+end
+
 /-- Technical lemma to rewrite suitably the preimage of an intersection under an extended chart, to
 bring it into a convenient form to apply derivative lemmas. -/
 lemma ext_chart_preimage_inter_eq :

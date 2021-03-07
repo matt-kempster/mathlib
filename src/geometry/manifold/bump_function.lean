@@ -4,131 +4,302 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Yury Kudryashov
 -/
 import analysis.calculus.specific_functions
-import geometry.manifold.times_cont_mdiff
+import geometry.manifold.diffeomorph
 
+universes uE uF uH uM
 variables
-{E : Type*} [normed_group E] [normed_space ℝ E] [finite_dimensional ℝ E]
-{F : Type*} [inner_product_space ℝ F]
-{H : Type*} [topological_space H]
+{E : Type uE} [normed_group E] [normed_space ℝ E] [finite_dimensional ℝ E]
+{F : Type uF} [inner_product_space ℝ F]
+{H : Type uH} [topological_space H]
 (IE : model_with_corners ℝ E H) (IF : model_with_corners ℝ F H)
-{M : Type*} [topological_space M] [charted_space H M]
+{M : Type uM} [topological_space M] [charted_space H M]
   [smooth_manifold_with_corners IE M]
 
-open function set metric filter
+open function set metric filter finite_dimensional
 open_locale topological_space manifold classical filter
 
 noncomputable theory
 
-def msmooth_bump_function (x : M) (r R : ℝ) : M → ℝ :=
+variable (M)
+
+structure msmooth_bump_function :=
+(c : M)
+(r R : ℝ)
+(r_pos : 0 < r)
+(r_lt_R : r < R)
+(closed_ball_subset : closed_ball (ext_chart_at IF c c) R ∩ range IF ⊆ (ext_chart_at IF c).target)
+
+variable {M}
+
+/-def msmooth_bump_function (x : M) (r R : ℝ) : M → ℝ :=
 indicator (ext_chart_at IF x).source
-  (smooth_bump_function (ext_chart_at IF x x) r R ∘ ext_chart_at IF x)
+  (smooth_bump_function (ext_chart_at IF x x) r R ∘ ext_chart_at IF x)-/
 
 namespace msmooth_bump_function
 
-variables {x y : M} {r R : ℝ}
+variables (f : msmooth_bump_function IF M) {x : M} {IF}
+
+instance : has_coe_to_fun (msmooth_bump_function IF M) :=
+⟨_, λ f, indicator (ext_chart_at IF f.c).source
+  (smooth_bump_function (ext_chart_at IF f.c f.c) f.r f.R ∘ ext_chart_at IF f.c)⟩
+
+lemma coe_def : ⇑f = indicator (ext_chart_at IF f.c).source
+  (smooth_bump_function (ext_chart_at IF f.c f.c) f.r f.R ∘ ext_chart_at IF f.c) :=
+rfl
+
+lemma R_pos : 0 < f.R := f.r_pos.trans f.r_lt_R
+
+lemma ball_subset : ball (ext_chart_at IF f.c f.c) f.R ∩ range IF ⊆ (ext_chart_at IF f.c).target :=
+subset.trans (inter_subset_inter_left _ ball_subset_closed_ball) f.closed_ball_subset
 
 lemma eq_on_source :
-  eq_on (msmooth_bump_function IF x r R)
-    (smooth_bump_function (ext_chart_at IF x x) r R ∘ ext_chart_at IF x)
-    (ext_chart_at IF x).source :=
+  eq_on f
+    (smooth_bump_function (ext_chart_at IF f.c f.c) f.r f.R ∘ ext_chart_at IF f.c)
+    (ext_chart_at IF f.c).source :=
 eq_on_indicator
 
-lemma eventually_eq_of_mem_source (hy : y ∈ (ext_chart_at IF x).source) :
-  msmooth_bump_function IF x r R =ᶠ[𝓝 y]
-    smooth_bump_function (ext_chart_at IF x x) r R ∘ ext_chart_at IF x :=
-mem_nhds_sets_iff.2 ⟨_, eq_on_source IF, ext_chart_at_open_source _ _, hy⟩
+lemma eventually_eq_of_mem_source (hx : x ∈ (ext_chart_at IF f.c).source) :
+  f =ᶠ[𝓝 x] smooth_bump_function (ext_chart_at IF f.c f.c) f.r f.R ∘ ext_chart_at IF f.c :=
+mem_nhds_sets_iff.2 ⟨_, f.eq_on_source, ext_chart_at_open_source _ _, hx⟩
 
-lemma one_of_dist_le (hlt : r < R) (hs : y ∈ (ext_chart_at IF x).source)
-  (hd : dist (ext_chart_at IF x y) (ext_chart_at IF x x) ≤ r) :
-  msmooth_bump_function IF x r R y = 1 :=
-by simp only [eq_on_source IF hs, (∘),
-  smooth_bump_function.one_of_mem_closed_ball hd hlt]
+lemma one_of_dist_le (hs : x ∈ (ext_chart_at IF f.c).source)
+  (hd : dist (ext_chart_at IF f.c x) (ext_chart_at IF f.c f.c) ≤ f.r) :
+  f x = 1 :=
+by simp only [f.eq_on_source hs, (∘), smooth_bump_function.one_of_mem_closed_ball hd f.r_lt_R]
 
-lemma support_eq_inter_preimage (hrR : r < R) :
-  support (msmooth_bump_function IF x r R) =
-    (ext_chart_at IF x).source ∩ (ext_chart_at IF x ⁻¹' ball (ext_chart_at IF x x) R) :=
-by rw [msmooth_bump_function, support_indicator, (∘), support_comp_eq_preimage,
-  ← (ext_chart_at IF x).symm_image_inter_target_eq',
-  ← (ext_chart_at IF x).symm_image_inter_target_eq', smooth_bump_function.support_eq hrR]
+lemma support_eq_inter_preimage :
+  support f =
+    (ext_chart_at IF f.c).source ∩ (ext_chart_at IF f.c ⁻¹' ball (ext_chart_at IF f.c f.c) f.R) :=
+by rw [coe_def, support_indicator, (∘), support_comp_eq_preimage,
+  ← (ext_chart_at IF f.c).symm_image_inter_target_eq',
+  ← (ext_chart_at IF f.c).symm_image_inter_target_eq', smooth_bump_function.support_eq f.r_lt_R]
 
-lemma support_eq_symm_image (hrR : r < R)
-  (hR : ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target) :
-  support (msmooth_bump_function IF x r R) =
-    (ext_chart_at IF x).symm '' (ball (ext_chart_at IF x x) R ∩ range IF) :=
+lemma support_eq_symm_image :
+  support f =
+    (ext_chart_at IF f.c).symm '' (ball (ext_chart_at IF f.c f.c) f.R ∩ range IF) :=
 begin
-  rw [support_eq_inter_preimage IF hrR, ← (ext_chart_at IF x).symm_image_inter_target_eq'],
+  rw [f.support_eq_inter_preimage, ← (ext_chart_at IF f.c).symm_image_inter_target_eq'],
   congr' 1,
   ext y,
-  exact ⟨λ hy, ⟨hy.1, ext_chart_at_target_subset_range IF x hy.2⟩, λ hy, ⟨hy.1, hR hy⟩⟩
+  exact and.congr_right_iff.2
+    (λ hy, ⟨λ h, ext_chart_at_target_subset_range _ _ h, λ h, f.ball_subset ⟨hy, h⟩⟩)
 end
 
-lemma mem_Icc : msmooth_bump_function IF x r R y ∈ Icc (0 : ℝ) 1 :=
+lemma mem_Icc : f x ∈ Icc (0 : ℝ) 1 :=
 begin
-  have : msmooth_bump_function IF x r R y = 0 ∨ msmooth_bump_function IF x r R y = _,
-    from indicator_eq_zero_or_self _ _ _,
+  have : f x = 0 ∨ f x = _, from indicator_eq_zero_or_self _ _ _,
   cases this; rw this,
   exacts [left_mem_Icc.2 zero_le_one, ⟨smooth_bump_function.nonneg, smooth_bump_function.le_one⟩]
 end
 
-lemma nonneg : 0 ≤ msmooth_bump_function IF x r R y := (mem_Icc IF).1
+lemma nonneg : 0 ≤ f x := f.mem_Icc.1
 
-lemma le_one : msmooth_bump_function IF x r R y ≤ 1 := (mem_Icc IF).2
+lemma le_one : f x ≤ 1 := f.mem_Icc.2
 
-lemma eventually_eq_one_of_dist_lt (hlt : r < R) (hs : y ∈ (ext_chart_at IF x).source)
-  (hd : dist (ext_chart_at IF x y) (ext_chart_at IF x x) < r) :
-  msmooth_bump_function IF x r R =ᶠ[𝓝 y] (λ _, 1) :=
+lemma eventually_eq_one_of_dist_lt (hs : x ∈ (ext_chart_at IF f.c).source)
+  (hd : dist (ext_chart_at IF f.c x) (ext_chart_at IF f.c f.c) < f.r) :
+  f =ᶠ[𝓝 x] (λ _, 1) :=
 begin
-  filter_upwards [mem_nhds_sets (ext_chart_preimage_open_of_open IF x is_open_ball) ⟨hs, hd⟩],
+  filter_upwards [mem_nhds_sets (ext_chart_preimage_open_of_open IF f.c is_open_ball) ⟨hs, hd⟩],
   rintro z ⟨hzs, hzd : _ < _⟩,
-  exact one_of_dist_le IF hlt hzs hzd.le
+  exact f.one_of_dist_le hzs hzd.le
 end
 
-lemma eventually_eq_one (h0 : 0 < r) (hlt : r < R) :
-  msmooth_bump_function IF x r R =ᶠ[𝓝 x] (λ _, 1) :=
-eventually_eq_one_of_dist_lt IF hlt (mem_ext_chart_source _ _) $ by rwa dist_self
+lemma eventually_eq_one : f =ᶠ[𝓝 f.c] (λ _, 1) :=
+f.eventually_eq_one_of_dist_lt (mem_ext_chart_source _ _) $ by { rw dist_self, exact f.r_pos }
 
-variables [t2_space M] [finite_dimensional ℝ F]
+@[simp] lemma eq_one : f f.c = 1 := f.eventually_eq_one.eq_of_nhds
 
-lemma closure_support_subset_symm_image_closed_ball (hrR : r < R)
-  (hR : closed_ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target) :
-  closure (support (msmooth_bump_function IF x r R)) ⊆
-    (ext_chart_at IF x).symm '' (closed_ball (ext_chart_at IF x x) R ∩ range IF) :=
+lemma c_mem_support : f.c ∈ support f := by { rw [mem_support, f.eq_one], exact one_ne_zero }
+
+lemma nonempty_support : (support f).nonempty := ⟨f.c, f.c_mem_support⟩
+
+section findim_F
+
+variables [finite_dimensional ℝ F]
+
+lemma compact_symm_image_closed_ball :
+  is_compact ((ext_chart_at IF f.c).symm ''
+    (closed_ball (ext_chart_at IF f.c f.c) f.R ∩ range IF)) :=
+compact_ext_chart_symm_image_closed_ball IF f.c f.closed_ball_subset
+
+variables [t2_space M]
+
+lemma closure_support_subset_symm_image_closed_ball :
+  closure (support f) ⊆
+    (ext_chart_at IF f.c).symm '' (closed_ball (ext_chart_at IF f.c f.c) f.R ∩ range IF) :=
 begin
-  have hR' : ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target,
-    from subset.trans (inter_subset_inter_left _ ball_subset_closed_ball) hR,
-  rw [support_eq_symm_image IF hrR hR'],
+  rw support_eq_symm_image,
   exact closure_minimal (image_subset _ $ inter_subset_inter_left _ ball_subset_closed_ball)
-    (compact_ext_chart_symm_image_closed_ball IF x hR).is_closed
+    f.compact_symm_image_closed_ball.is_closed
 end
 
-lemma closure_support_subset_source (hrR : r < R)
-  (hR : closed_ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target) :
-  closure (support (msmooth_bump_function IF x r R)) ⊆ (ext_chart_at IF x).source :=
-calc closure (support (msmooth_bump_function IF x r R))
-    ⊆ (ext_chart_at IF x).symm '' (closed_ball (ext_chart_at IF x x) R ∩ range IF) :
-  closure_support_subset_symm_image_closed_ball IF hrR hR
-... ⊆ (ext_chart_at IF x).symm '' (ext_chart_at IF x).target :
-  image_subset _ hR
-... = (ext_chart_at IF x).source : (ext_chart_at IF x).symm_image_target_eq_source
+lemma closure_support_subset_ext_chart_at_source :
+  closure (support f) ⊆ (ext_chart_at IF f.c).source :=
+calc closure (support f)
+    ⊆ (ext_chart_at IF f.c).symm '' (closed_ball (ext_chart_at IF f.c f.c) f.R ∩ range IF) :
+  f.closure_support_subset_symm_image_closed_ball
+... ⊆ (ext_chart_at IF f.c).symm '' (ext_chart_at IF f.c).target :
+  image_subset _ f.closed_ball_subset
+... = (ext_chart_at IF f.c).source : (ext_chart_at IF f.c).symm_image_target_eq_source
 
-lemma compact_closure_support (hrR : r < R)
-  (hR : closed_ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target) :
-  is_compact (closure $ support $ msmooth_bump_function IF x r R) :=
-compact_of_is_closed_subset (compact_ext_chart_symm_image_closed_ball IF x hR) is_closed_closure $
- closure_support_subset_symm_image_closed_ball IF hrR hR
+lemma closure_support_subset_chart_at_source :
+  closure (support f) ⊆ (chart_at H f.c).source :=
+by simpa only [ext_chart_at_source] using f.closure_support_subset_ext_chart_at_source
 
-protected lemma smooth [smooth_manifold_with_corners IF M] (h0 : 0 < r) (hrR : r < R)
-  (hR : closed_ball (ext_chart_at IF x x) R ∩ range IF ⊆ (ext_chart_at IF x).target) :
-  smooth IF 𝓘(ℝ) (msmooth_bump_function IF x r R) :=
+lemma compact_closure_support : is_compact (closure $ support f) :=
+compact_of_is_closed_subset f.compact_symm_image_closed_ball is_closed_closure
+ f.closure_support_subset_symm_image_closed_ball
+
+protected lemma smooth' [smooth_manifold_with_corners IF M] : smooth IF 𝓘(ℝ) f :=
 begin
-  intro y,
-  by_cases hy : y ∈ closure (support $ msmooth_bump_function IF x r R),
-  { have hy : y ∈ (ext_chart_at IF x).source, from closure_support_subset_source IF hrR hR hy,
-    refine times_cont_mdiff_at.congr_of_eventually_eq _ (eventually_eq_of_mem_source _ hy),
-    exact (smooth_bump_function.times_cont_diff_at h0 hrR).times_cont_mdiff_at.comp y
-      (times_cont_mdiff_at_ext_chart_at' hy) },
-  { refine times_cont_mdiff_at.congr_of_eventually_eq _ (eventually_eq_zero_nhds.2 hy),
-    exact times_cont_mdiff_at_const }
+  apply times_cont_mdiff_of_support f.closure_support_subset_ext_chart_at_source
+    (ext_chart_at_open_source _ _),
+  refine times_cont_mdiff_on.congr _ f.eq_on_source,
+  exact (smooth_bump_function.times_cont_diff f.r_pos
+    f.r_lt_R).times_cont_mdiff.comp_times_cont_mdiff_on times_cont_mdiff_on_ext_chart_at,
+end
+
+end findim_F
+
+variable {IE}
+
+protected lemma smooth [t2_space M] {e : E ≃L[ℝ] F}
+  (f : msmooth_bump_function (IE.trans_diffeomorph e.to_diffeomorph) M) : smooth IE 𝓘(ℝ) f :=
+begin
+  haveI : finite_dimensional ℝ F := e.to_linear_equiv.finite_dimensional,
+  exact e.to_diffeomorph.smooth_trans_diffeomorph_left.1 f.smooth'
+end
+
+lemma smooth_smul {G} [normed_group G] [normed_space ℝ G] [t2_space M] {e : E ≃L[ℝ] F}
+  (f : msmooth_bump_function (IE.trans_diffeomorph e.to_diffeomorph) M)
+  {g : M → G} (hg : smooth_on IE 𝓘(ℝ, G) g (ext_chart_at IE f.c).source) :
+  smooth IE 𝓘(ℝ, G) (λ x, f x • g x) :=
+begin
+  haveI : finite_dimensional ℝ F := e.to_linear_equiv.finite_dimensional,
+  have : closure (support (λ x, f x • g x)) ⊆ (ext_chart_at IE f.c).source,
+  calc closure (support (λ x, f x • g x)) ⊆ closure (support f) :
+    closure_mono (support_smul_subset_left _ _)
+  ...  ⊆ (ext_chart_at _ f.c).source :
+    f.closure_support_subset_ext_chart_at_source
+  ... = _ : by simp only [ext_chart_at_source],
+  apply times_cont_mdiff_of_support this (ext_chart_at_open_source _ _),
+  exact f.smooth.smooth_on.smul hg
 end
 
 end msmooth_bump_function
+
+structure smooth_bump_covering (s : set M) (U : M → set M) :=
+(ι : Type uM)
+(c : ι → M)
+(c_mem : ∀ i, c i ∈ s)
+(e : E ≃L[ℝ] euclidean_space ℝ (fin $ findim ℝ E) :=
+  (continuous_linear_equiv.of_findim_eq findim_euclidean_space_fin.symm))
+(to_fun : ι → msmooth_bump_function (IE.trans_diffeomorph e.to_diffeomorph) M)
+(locally_finite' : locally_finite (λ i, support (to_fun i)))
+(eventually_eq_one' : ∀ x ∈ s, ∃ i, to_fun i =ᶠ[𝓝 x] 1)
+(closure_support_subset' : ∀ i, closure (support $ to_fun i) ⊆ U (c i))
+
+namespace smooth_bump_covering
+
+/-- Choice of a `smooth_bump_covering`. -/
+def choice_set [t2_space M] [sigma_compact_space M] (s : set M) (hs : is_closed s)
+  (U : M → set M) (hU : ∀ x ∈ s, U x ∈ 𝓝 x) :
+  smooth_bump_covering IE s U :=
+begin
+  apply classical.choice,
+  -- First we deduce some missing instances
+  haveI : locally_compact_space H := IE.locally_compact,
+  haveI : locally_compact_space M := charted_space.locally_compact H,
+  haveI : normal_space M := normal_of_paracompact_t2,
+  /- Let `F` be the Euclidean space of the same dimension as `E`. Then `E` is diffeomorphic to `F`,
+  and most of the proof will be done using `F` as a model space for `M`. -/
+  set F := euclidean_space ℝ (fin $ findim ℝ E),
+  have eEF : E ≃L[ℝ] F := continuous_linear_equiv.of_findim_eq findim_euclidean_space_fin.symm,
+  set IF := IE.trans_diffeomorph eEF.to_diffeomorph,
+  set e : M → local_equiv M F := ext_chart_at IF,
+  set cBF : M → ℝ → set F := λ x r, closed_ball (e x x) r ∩ range IF,
+  set cB : M → ℝ → set M := λ x r, (e x).symm '' cBF x r,
+  set BF : M → ℝ → set F := λ x r, ball (e x x) r ∩ range IF,
+  set B : M → ℝ → set M := λ x r, (e x).symm '' BF x r,
+  have BFcBF : ∀ x r, BF x r ⊆ cBF x r,
+    from λ x r, inter_subset_inter_left _ ball_subset_closed_ball,
+  have BcB : ∀ x r, B x r ⊆ cB x r, from λ x r, image_subset _ (BFcBF x r),
+  have hB : ∀ x ∈ s, (𝓝 x).has_basis (λ r : ℝ, 0 < r ∧ cBF x r ⊆ (e x).target ∧ cB x r ⊆ U x) (B x),
+    from λ x hx, nhds_basis_ext_chart_symm_image_ball_subset _ _ (hU x hx),
+  rcases refinement_of_locally_compact_sigma_compact_of_nhds_basis_set hs hB
+    with ⟨ι, c, R, hR, hsub', hfin⟩, choose hcs hR0 hcBFR hcBR using hR,
+  have Bi_eq : ∀ i, B (c i) (R i) = (e (c i)).source ∩ e (c i) ⁻¹' ball (e (c i) (c i)) (R i),
+  { intro i,
+    have : ball (e (c i) (c i)) (R i) ∩ range IF ⊆ (e (c i)).target,
+      from subset.trans (inter_subset_inter_left _ ball_subset_closed_ball) (hcBFR i),
+    simp only [B],
+    rw [← (e (c i)).symm_image_inter_target_eq'],
+    congr' 1,
+    refine subset.antisymm (subset_inter (inter_subset_left _ _) this)
+      (inter_subset_inter_right _ (ext_chart_at_target_subset_range _ _)) },
+  have Bo : ∀ i, is_open (B (c i) (R i)),
+  { intro i,
+    rw Bi_eq,
+    exact (ext_chart_at_continuous_on IF (c i)).preimage_open_of_open
+     (ext_chart_at_open_source IF _) is_open_ball },
+  have Bsrc : ∀ i, B (c i) (R i) ⊆ (e (c i)).source,
+    from λ i, (Bi_eq i).symm ▸ inter_subset_left _ _,
+  choose V hsV hVo hVB
+    using exists_subset_Union_closure_subset hs Bo (λ x hx, hfin.point_finite x) hsub',
+  have hVcB : ∀ i, closure (V i) ⊆ cB (c i) (R i), from λ i, subset.trans (hVB i) (BcB _ _),
+  have hVc : ∀ i, is_compact (closure (V i)),
+    from λ i, compact_of_is_closed_subset
+      (compact_ext_chart_symm_image_closed_ball IF (c i) (hcBFR i)) is_closed_closure (hVcB i),
+  have hVBF : ∀ i, closure (e (c i) '' V i) ⊆ BF (c i) (R i),
+  { intro i,
+    rw [← image_closure_of_compact (hVc i) ((ext_chart_at_continuous_on IF (c i)).mono $
+      subset.trans (hVB i) (Bsrc i)), image_subset_iff],
+    refine subset.trans (hVB i) (λ x' hx', mem_preimage.2 _),
+    rw Bi_eq at hx',
+    exact ⟨hx'.2, mem_range_self _⟩ },
+  have : ∀ i, ∃ r ∈ Ioo 0 (R i), closure (e (c i) '' V i) ⊆ BF (c i) r,
+  { intro i,
+    rcases exists_pos_lt_subset_ball (hR0 i) is_closed_closure
+      (subset.trans (hVBF i) (inter_subset_left _ _)) with ⟨r, hIoo, hrV⟩,
+    exact ⟨r, hIoo, subset_inter hrV (subset.trans (hVBF i) (inter_subset_right _ _))⟩ },
+  choose r hlt hrV,
+  set f : ι → msmooth_bump_function IF M := λ i, ⟨c i, r i, R i, (hlt i).1, (hlt i).2, hcBFR i⟩,
+  refine ⟨⟨ι, c, hcs, _, f, _, λ x hx, _, λ i, _⟩⟩,
+  { simpa only [(f _).support_eq_symm_image] },
+  { refine (mem_Union.1 $ hsV hx).imp (λ i hi, _),
+    refine mem_nhds_sets_iff.2 ⟨V i, λ x' hx', _, hVo i, hi⟩,
+    exact (f i).one_of_dist_le (Bsrc _ $ hVB _ $ subset_closure hx')
+      (le_of_lt (hrV i (subset_closure $ mem_image_of_mem _ hx')).1) },
+  { calc closure (support (f i)) ⊆ cB (c i) (R i) :
+      (f i).closure_support_subset_symm_image_closed_ball
+    ... ⊆ U (c i) : hcBR i }
+end
+
+def choice [t2_space M] [sigma_compact_space M] (U : M → set M) (hU : ∀ x, U x ∈ 𝓝 x) :
+  smooth_bump_covering IE univ U :=
+choice_set IE univ is_closed_univ U (λ x hx, hU x)
+
+variables {s : set M} {U : M → set M} (f : smooth_bump_covering IE s U) {IE}
+
+instance : has_coe_to_fun (smooth_bump_covering IE s U) := ⟨_, to_fun⟩
+
+protected lemma locally_finite : locally_finite (λ i, support (f i)) := f.locally_finite'
+
+lemma eventually_eq_one (x : M) (hx : x ∈ s) : ∃ i, f i =ᶠ[𝓝 x] 1 := f.eventually_eq_one' x hx
+
+lemma closure_support_subset (i : f.ι) : closure (support $ f i) ⊆ U (f.c i) :=
+f.closure_support_subset' i
+
+section compact
+
+variables [compact_space M]
+instance fintype_ι_of_compact : fintype f.ι :=
+f.locally_finite.fintype_of_compact $ λ i, (f i).nonempty_support
+
+def embedding_pi_tangent : C^∞⟮IE, M; 𝓘(ℝ, f.ι → E), f.ι → E⟯ :=
+{ to_fun := λ x i, f i x • ext_chart_at IE (f i).c x,
+  times_cont_mdiff_to_fun := _ }
+
+end compact
+end smooth_bump_covering

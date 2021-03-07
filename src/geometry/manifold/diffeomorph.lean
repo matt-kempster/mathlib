@@ -65,9 +65,10 @@ end defs
 localized "notation M ` ≃ₘ^` n:1000 `⟮`:50 I `,` J `⟯ ` N := times_diffeomorph I J M N n" in manifold
 localized "notation M ` ≃ₘ⟮` I `,` J `⟯ ` N := times_diffeomorph I J M N ⊤" in manifold
 localized
-  "notation E ` ≃ₘ^` n:1000 `[`:50 𝕜 `] ` E' := times_diffeomorph (𝓘(𝕜, E)) (𝓘(𝕜, E')) E E' n"
+  "notation E ` ≃ₘ^` n:1000 `[`:50 𝕜 `] ` E' := times_diffeomorph (model_with_corners_self 𝕜 E) (model_with_corners_self 𝕜 E') E E' n"
   in manifold
-localized "notation E ` ≃ₘ[` 𝕜 `] ` E' := times_diffeomorph (𝓘(𝕜, E)) (𝓘(𝕜, E')) E E' ⊤" in manifold
+localized "notation E ` ≃ₘ[` 𝕜 `] ` E' := times_diffeomorph (model_with_corners_self 𝕜 E) (model_with_corners_self 𝕜 E') E E' ⊤"
+  in manifold
 
 namespace times_diffeomorph
 instance : has_coe_to_fun (M ≃ₘ^n⟮I, I'⟯ M') := ⟨λ _, M → M', λe, e.to_equiv⟩
