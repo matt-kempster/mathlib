@@ -35,14 +35,15 @@ variables {ι X : Type*} [topological_space X] [normal_space X]
 namespace shrinking_lemma
 
 /-- Auxiliary definition for the proof of `shrinking_lemma`. A partial refinement of a covering
-`⋃ i, u i` is a map `v : ι → set X` and a set `carrier : set ι` such that
+`⋃ i, u i` of a set `s` is a map `v : ι → set X` and a set `carrier : set ι` such that
 
-* `(⋃ i, v i) = univ`;
+* `s ⊆ ⋃ i, v i`;
+* all `v i` are open;
 * if `i ∈ carrier v`, then `closure (v i) ⊆ u i`;
 * if `i ∉ carrier`, then `v i = u i`.
 
 This type is equipped with the folowing partial order: `v ≤ v'` if `v.carrier ⊆ v'.carrier`
-and `v i = v' i` for `i ∈ v.carrier`. We will use the Zorn's lemma to prove that this type has
+and `v i = v' i` for `i ∈ v.carrier`. We will use Zorn's lemma to prove that this type has
 a maximal element, then show that the maximal element must have `carrier = univ`. -/
 @[nolint has_inhabited_instance] -- the trivial refinement needs `u` to be a covering
 structure partial_refinement (u : ι → set X) (s : set X) :=
