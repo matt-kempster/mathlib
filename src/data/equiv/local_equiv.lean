@@ -597,7 +597,7 @@ by ext x; simp [ext_iff]; tauto
 end prod
 
 /-- Combine two `local_equiv`s using `set.piecewise`. The definition assumes
-`e '' (s ∩ e.source) = t ∩ e.target` -/
+`e.is_image s t` and `e'.is_image s t`. -/
 @[simps] def piecewise (e e' : local_equiv α β) (s : set α) (t : set β)
   [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)] (H : e.is_image s t) (H' : e'.is_image s t) :
   local_equiv α β :=
