@@ -665,6 +665,16 @@ funext $ λ x, if hx : x ∈ s then by simp [hx] else by simp [hx]
   (range f).piecewise g₁ g₂ ∘ f = g₁ ∘ f :=
 comp_eq_of_eq_on_range $ piecewise_eq_on _ _ _
 
+theorem maps_to.piecewise_ite {s s₁ s₂ : set α} {t t₁ t₂ : set β} {f₁ f₂ : α → β}
+  [∀ i, decidable (i ∈ s)]
+  (h₁ : maps_to f₁ (s₁ ∩ s) (t₁ ∩ t)) (h₂ : maps_to f₂ (s₂ ∩ sᶜ) (t₂ ∩ tᶜ)) :
+  maps_to (s.piecewise f₁ f₂) (s.ite s₁ s₂) (t.ite t₁ t₂) :=
+begin
+  refine (h₁.congr _).union_union (h₂.congr _),
+  exacts [(piecewise_eq_on s f₁ f₂).symm.mono (inter_subset_right _ _),
+    (piecewise_eq_on_compl s f₁ f₂).symm.mono (inter_subset_right _ _)]
+end
+
 lemma piecewise_preimage (f g : α → β) (t) :
   s.piecewise f g ⁻¹' t = s ∩ f ⁻¹' t ∪ sᶜ ∩ g ⁻¹' t :=
 ext $ λ x, by by_cases x ∈ s; simp *

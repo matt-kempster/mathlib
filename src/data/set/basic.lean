@@ -1054,6 +1054,10 @@ lemma ite_inter (t s₁ s₂ s : set α) :
   t.ite (s₁ ∩ s) (s₂ ∩ s) = t.ite s₁ s₂ ∩ s :=
 by rw [ite_inter_inter, ite_same]
 
+lemma ite_inter_of_inter_eq (t : set α) {s₁ s₂ s : set α} (h : s₁ ∩ s = s₂ ∩ s) :
+  t.ite s₁ s₂ ∩ s = s₁ ∩ s :=
+by rw [← ite_inter, ← h, ite_same]
+
 /-! ### Inverse image -/
 
 /-- The preimage of `s : set β` by `f : α → β`, written `f ⁻¹' s`,

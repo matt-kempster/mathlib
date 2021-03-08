@@ -200,6 +200,95 @@ protected def to_equiv : equiv (e.source) (e.target) :=
 
 lemma image_source_eq_target : e '' e.source = e.target := e.bij_on.image_eq
 
+/-- We say that `t : set β` is an image of `s : set α` under a local equivalence if
+any of the following equivalent conditions hold:
+
+* `e '' (e.source ∩ s) = e.target ∩ t`;
+* `e.source ∩ e ⁻¹ t = e.source ∩ s`;
+* `∀ x ∈ e.source, e x ∈ t ↔ x ∈ s` (this one is used in the definition).
+-/
+def is_image (s : set α) (t : set β) : Prop := ∀ ⦃x⦄, x ∈ e.source → (e x ∈ t ↔ x ∈ s)
+
+namespace is_image
+
+variables {e} {s : set α} {t : set β} {x : α} {y : β}
+
+lemma apply_mem_iff (h : e.is_image s t) (hx : x ∈ e.source) : e x ∈ t ↔ x ∈ s := h hx
+
+lemma symm_apply_mem_iff (h : e.is_image s t) : ∀ ⦃y⦄, y ∈ e.target → (e.symm y ∈ s ↔ y ∈ t) :=
+by { rw [← e.image_source_eq_target, ball_image_iff], intros x hx, rw [e.left_inv hx, h hx] }
+
+protected lemma symm (h : e.is_image s t) : e.symm.is_image t s := h.symm_apply_mem_iff
+
+@[simp] lemma symm_iff : e.symm.is_image t s ↔ e.is_image s t := ⟨λ h, h.symm, λ h, h.symm⟩
+
+protected lemma maps_to (h : e.is_image s t) : maps_to e (e.source ∩ s) (e.target ∩ t) :=
+λ x hx, ⟨e.maps_to hx.1, (h hx.1).2 hx.2⟩
+
+lemma symm_maps_to (h : e.is_image s t) : maps_to e.symm (e.target ∩ t) (e.source ∩ s) :=
+h.symm.maps_to
+
+/-- Restrict a `local_equiv` to a pair of corresponding sets. -/
+@[simps] def restr (h : e.is_image s t) : local_equiv α β :=
+{ to_fun := e,
+  inv_fun := e.symm,
+  source := e.source ∩ s,
+  target := e.target ∩ t,
+  map_source' := h.maps_to,
+  map_target' := h.symm_maps_to,
+  left_inv' := e.left_inv_on.mono (inter_subset_left _ _),
+  right_inv' := e.right_inv_on.mono (inter_subset_left _ _) }
+
+lemma image_eq (h : e.is_image s t) : e '' (e.source ∩ s) = e.target ∩ t :=
+h.restr.image_source_eq_target
+
+lemma symm_image_eq (h : e.is_image s t) : e.symm '' (e.target ∩ t) = e.source ∩ s :=
+h.symm.image_eq
+
+lemma iff_preimage_eq : e.is_image s t ↔ e.source ∩ e ⁻¹' t = e.source ∩ s :=
+by simp only [is_image, set.ext_iff, mem_inter_eq, and.congr_right_iff, mem_preimage]
+
+alias iff_preimage_eq ↔ local_equiv.is_image.preimage_eq local_equiv.is_image.of_preimage_eq
+
+lemma iff_symm_preimage_eq : e.is_image s t ↔ e.target ∩ e.symm ⁻¹' s = e.target ∩ t :=
+symm_iff.symm.trans iff_preimage_eq
+
+alias iff_symm_preimage_eq ↔ local_equiv.is_image.symm_preimage_eq
+  local_equiv.is_image.of_symm_preimage_eq
+
+lemma of_image_eq (h : e '' (e.source ∩ s) = e.target ∩ t) : e.is_image s t :=
+of_symm_preimage_eq $ eq.trans (of_symm_preimage_eq rfl).image_eq.symm h
+
+lemma of_symm_image_eq (h : e.symm '' (e.target ∩ t) = e.source ∩ s) : e.is_image s t :=
+of_preimage_eq $ eq.trans (of_preimage_eq rfl).symm_image_eq.symm h
+
+protected lemma compl (h : e.is_image s t) : e.is_image sᶜ tᶜ :=
+λ x hx, not_congr (h hx)
+
+protected lemma inter {s' t'} (h : e.is_image s t) (h' : e.is_image s' t') :
+  e.is_image (s ∩ s') (t ∩ t') :=
+λ x hx, and_congr (h hx) (h' hx)
+
+protected lemma union {s' t'} (h : e.is_image s t) (h' : e.is_image s' t') :
+  e.is_image (s ∪ s') (t ∪ t') :=
+λ x hx, or_congr (h hx) (h' hx)
+
+protected lemma diff {s' t'} (h : e.is_image s t) (h' : e.is_image s' t') :
+  e.is_image (s \ s') (t \ t') :=
+h.inter h'.compl
+
+lemma left_inv_on_piecewise {e' : local_equiv α β} [∀ i, decidable (i ∈ s)] [∀ i, decidable (i ∈ t)]
+  (h : e.is_image s t) (h' : e'.is_image s t) :
+  left_inv_on (t.piecewise e.symm e'.symm) (s.piecewise e e') (s.ite e.source e'.source) :=
+begin
+  rintro x (⟨he, hs⟩|⟨he, hs : x ∉ s⟩),
+  { rw [piecewise_eq_of_mem _ _ _ hs, piecewise_eq_of_mem _ _ _ ((h he).2 hs), e.left_inv he], },
+  { rw [piecewise_eq_of_not_mem _ _ _ hs, piecewise_eq_of_not_mem _ _ _ ((h'.compl he).2 hs),
+      e'.left_inv he] }
+end
+
+end is_image
+
 lemma image_source_inter_eq' (s : set α) :
   e '' (e.source ∩ s) = e.target ∩ e.symm ⁻¹' s :=
 by rw [inter_comm, e.left_inv_on.image_inter', image_source_eq_target, inter_comm]
@@ -257,20 +346,7 @@ end
 
 /-- Restricting a local equivalence to e.source ∩ s -/
 protected def restr (s : set α) : local_equiv α β :=
-{ to_fun  := e,
-  inv_fun := e.symm,
-  source  := e.source ∩ s,
-  target  := e.target ∩ e.symm⁻¹' s,
-  map_source'  := λx hx, begin
-    simp only with mfld_simps at hx,
-    simp only [hx] with mfld_simps,
-  end,
-  map_target' := λy hy, begin
-    simp only with mfld_simps at hy,
-    simp only [hy] with mfld_simps,
-  end,
-  left_inv'  := λx hx, e.left_inv hx.1,
-  right_inv' := λy hy, e.right_inv hy.1 }
+(@is_image.of_symm_preimage_eq α β e s _ rfl).restr
 
 @[simp, mfld_simps] lemma restr_coe (s : set α) : (e.restr s : α → β) = e := rfl
 @[simp, mfld_simps] lemma restr_coe_symm (s : set α) : ((e.restr s).symm : β → α) = e.symm := rfl
@@ -522,98 +598,23 @@ end prod
 
 /-- Combine two `local_equiv`s using `set.piecewise`. The definition assumes
 `e '' (s ∩ e.source) = t ∩ e.target` -/
-@[simps apply symm_apply] def piecewise (e e' : local_equiv α β) (s : set α) (t : set β)
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
+@[simps] def piecewise (e e' : local_equiv α β) (s : set α) (t : set β)
+  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)] (H : e.is_image s t) (H' : e'.is_image s t) :
   local_equiv α β :=
 { to_fun := s.piecewise e e',
   inv_fun := t.piecewise e.symm e'.symm,
-  source := s ∩ e.source ∪ sᶜ ∩ e'.source,
-  target := t ∩ e.target ∪ tᶜ ∩ e'.target,
-  map_source' := by rintro x (⟨hs, he⟩ | ⟨hs : x ∉ s, he⟩); [left, right]; simp *,
-  map_target' :=
-    begin
-      rintro y (⟨ht, he⟩ | ⟨ht : y ∉ t, he⟩); [left, right];
-        simp [*, ((e.image_inter_eq_tfae s t).out 4 5).1 H,
-          ((e'.image_inter_eq_tfae s t).out 4 5).1 H']
-    end,
-  left_inv' := by rintro x (⟨hs, he⟩ | ⟨hs : x ∉ s, he⟩); simp *,
-  right_inv' :=
-    begin
-      rintro y (⟨ht, he⟩ | ⟨ht : y ∉ t, he⟩);
-        simp [*, ((e.image_inter_eq_tfae s t).out 4 5).1 H,
-          ((e'.image_inter_eq_tfae s t).out 4 5).1 H']
-    end }
+  source := s.ite e.source e'.source,
+  target := t.ite e.target e'.target,
+  map_source' := H.maps_to.piecewise_ite H'.compl.maps_to,
+  map_target' := H.symm.maps_to.piecewise_ite H'.symm.compl.maps_to,
+  left_inv' := H.left_inv_on_piecewise H',
+  right_inv' := H.symm.left_inv_on_piecewise H'.symm }
 
 lemma symm_piecewise (e e' : local_equiv α β) {s : set α} {t : set β}
   [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  (e.piecewise e' s t H H').symm =
-    e.symm.piecewise e'.symm t s (((e.image_inter_eq_tfae s t).out 4 5).1 H)
-      (((e'.image_inter_eq_tfae s t).out 4 5).1 H') :=
+  (H : e.is_image s t) (H' : e'.is_image s t) :
+  (e.piecewise e' s t H H').symm = e.symm.piecewise e'.symm t s H.symm H'.symm :=
 rfl
-
-@[simp] lemma inter_piecewise_source (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  s ∩ (e.piecewise e' s t H H').source = s ∩ e.source :=
-by simp [piecewise, inter_union_distrib_left, ← inter_assoc]
-
-@[simp] lemma compl_inter_piecewise_source (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  sᶜ ∩ (e.piecewise e' s t H H').source = sᶜ ∩ e'.source :=
-by simp [piecewise, inter_union_distrib_left, ← inter_assoc]
-
-@[simp] lemma inter_piecewise_target (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  t ∩ (e.piecewise e' s t H H').target = t ∩ e.target :=
-by simp [piecewise, inter_union_distrib_left, ← inter_assoc]
-
-@[simp] lemma compl_inter_piecewise_target (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  tᶜ ∩ (e.piecewise e' s t H H').target = tᶜ ∩ e'.target :=
-by simp [piecewise, inter_union_distrib_left, ← inter_assoc]
-
-lemma inter_subset_piecewise_source (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  e.source ∩ e'.source ⊆ (e.piecewise e' s t H H').source :=
-λ x ⟨hx, hx'⟩, if h : x ∈ s then or.inl ⟨h, hx⟩ else or.inr ⟨h, hx'⟩
-
-lemma inter_subset_piecewise_target (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  e.target ∩ e'.target ⊆ (e.piecewise e' s t H H').target :=
-λ x ⟨hx, hx'⟩, if h : x ∈ t then or.inl ⟨h, hx⟩ else or.inr ⟨h, hx'⟩
-
-lemma piecewise_source_subset_union (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  (e.piecewise e' s t H H').source ⊆ e.source ∪ e'.source :=
-union_subset_union (inter_subset_right _ _) (inter_subset_right _ _)
-
-lemma piecewise_target_subset_union (e e' : local_equiv α β) {s : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s) :
-  (e.piecewise e' s t H H').target ⊆ e.target ∪ e'.target :=
-union_subset_union (inter_subset_right _ _) (inter_subset_right _ _)
-
-lemma piecewise_source_inter_eq_of_inter_eq (e e' : local_equiv α β) {s s' : set α} {t : set β}
-  [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)]
-  (H : ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s) (H' : ∀ x ∈ e'.source, e' x ∈ t ↔ x ∈ s)
-  (Heq : s' ∩ e.source = s' ∩ e'.source) :
-  s' ∩ (e.piecewise e' s t H H').source = s' ∩ e.source :=
-subset.antisymm
-  (calc s' ∩ (e.piecewise e' s t H H').source ⊆ s' ∩ (e.source ∪ e'.source) :
-     inter_subset_inter_right _ $ e.piecewise_source_subset_union e' H H'
-   ... = s' ∩ e.source : by rw [inter_union_distrib_left, ← Heq, union_self])
-  (calc s' ∩ e.source = s' ∩ (e.source ∩ e'.source) :
-     by rw [inter_left_comm, ← Heq, inter_left_comm, inter_self]
-   ... ⊆ s' ∩ (e.piecewise e' s t H H').source :
-     inter_subset_inter_right _ $ e.inter_subset_piecewise_source e' H H')
 
 end local_equiv
 
