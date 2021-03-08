@@ -200,80 +200,46 @@ protected def to_equiv : equiv (e.source) (e.target) :=
 
 lemma image_source_eq_target : e '' e.source = e.target := e.bij_on.image_eq
 
-lemma image_inter_source_eq' (s : set α) :
-  e '' (s ∩ e.source) = e.target ∩ e.symm ⁻¹' s :=
-by rw [e.left_inv_on.image_inter', image_source_eq_target, inter_comm]
+lemma image_source_inter_eq' (s : set α) :
+  e '' (e.source ∩ s) = e.target ∩ e.symm ⁻¹' s :=
+by rw [inter_comm, e.left_inv_on.image_inter', image_source_eq_target, inter_comm]
 
-lemma symm_image_inter_target_eq' (s : set β) :
-  e.symm '' (s ∩ e.target) = e.source ∩ e ⁻¹' s :=
-e.symm.image_inter_source_eq' _
-
-/-- The following conditions are equivalent and state that `e` sends `s ∩ e.source`
-to `t ∩ e.target`:
-
-- 0 : `e '' (s ∩ e.source) = t ∩ e.target`,
-- 1 : `e.symm '' (t ∩ e.target) =  s ∩ e.source`,
-- 2 : `e ⁻¹' t ∩ e.source = s ∩ e.source`,
-- 3 : `e.symm ⁻¹' s ∩ e.target = t ∩ e.target`,
-- 4 : `∀ x ∈ e.source, e x ∈ t ↔ x ∈ s`,
-- 5 : `∀ y ∈ e.target, e.symm y ∈ s ↔ y ∈ t`. -/
-lemma image_inter_eq_tfae (s : set α) (t : set β) :
-  tfae [e '' (s ∩ e.source) = t ∩ e.target,
-    e.symm '' (t ∩ e.target) =  s ∩ e.source,
-    e ⁻¹' t ∩ e.source = s ∩ e.source,
-    e.symm ⁻¹' s ∩ e.target = t ∩ e.target,
-    ∀ x ∈ e.source, e x ∈ t ↔ x ∈ s,
-    ∀ y ∈ e.target, e.symm y ∈ s ↔ y ∈ t] :=
-begin
-  tfae_have : 5 ↔ 6,
-    by simp only [← e.image_source_eq_target, ball_image_iff, e.left_inv,
-      iff.comm] { contextual := tt },
-  tfae_have : 4 ↔ 6, by simp [set.ext_iff],
-  tfae_have : 3 ↔ 5, by simp [set.ext_iff],
-  tfae_have : 1 ↔ 4, by rw [image_inter_source_eq', inter_comm],
-  tfae_have : 2 ↔ 3, by rw [symm_image_inter_target_eq', inter_comm],
-  tfae_finish
-end
-
-lemma image_inter_source_eq (s : set α) :
-  e '' (s ∩ e.source) = e.target ∩ e.symm ⁻¹' (s ∩ e.source) :=
-by rw [e.left_inv_on.image_inter, image_source_eq_target, inter_comm]
+lemma image_source_inter_eq (s : set α) :
+  e '' (e.source ∩ s) = e.target ∩ e.symm ⁻¹' (e.source ∩ s) :=
+by rw [inter_comm, e.left_inv_on.image_inter, image_source_eq_target, inter_comm]
 
 lemma image_eq_target_inter_inv_preimage {s : set α} (h : s ⊆ e.source) :
   e '' s = e.target ∩ e.symm ⁻¹' s :=
-by rw [← e.image_inter_source_eq', inter_eq_self_of_subset_left h]
+by rw [← e.image_source_inter_eq', inter_eq_self_of_subset_right h]
 
 lemma symm_image_eq_source_inter_preimage {s : set β} (h : s ⊆ e.target) :
   e.symm '' s = e.source ∩ e ⁻¹' s :=
 e.symm.image_eq_target_inter_inv_preimage h
 
-lemma symm_image_inter_target_eq (s : set β) :
-  e.symm '' (s ∩ e.target) = e.source ∩ e ⁻¹' (s ∩ e.target) :=
-e.symm.image_inter_source_eq _
+lemma symm_image_target_inter_eq (s : set β) :
+  e.symm '' (e.target ∩ s) = e.source ∩ e ⁻¹' (e.target ∩ s) :=
+e.symm.image_source_inter_eq _
+
+lemma symm_image_target_inter_eq' (s : set β) :
+  e.symm '' (e.target ∩ s) = e.source ∩ e ⁻¹' s :=
+e.symm.image_source_inter_eq' _
 
 lemma source_inter_preimage_inv_preimage (s : set α) :
   e.source ∩ e ⁻¹' (e.symm ⁻¹' s) = e.source ∩ s :=
-begin
-  ext x, split,
-  { rintros ⟨hx, xs⟩,
-    simp only [mem_preimage, hx, e.left_inv, mem_preimage] at xs,
-    exact ⟨hx, xs⟩ },
-  { rintros ⟨hx, xs⟩,
-    simp [hx, xs] }
-end
+set.ext $ λ x, and.congr_right_iff.2 $ λ hx, by simp only [mem_preimage, e.left_inv hx]
 
 lemma target_inter_inv_preimage_preimage (s : set β) :
   e.target ∩ e.symm ⁻¹' (e ⁻¹' s) = e.target ∩ s :=
 e.symm.source_inter_preimage_inv_preimage _
 
 lemma source_subset_preimage_target : e.source ⊆ e ⁻¹' e.target :=
-λx hx, e.map_source hx
+e.maps_to
 
 lemma symm_image_target_eq_source : e.symm '' e.target = e.source :=
 e.symm.image_source_eq_target
 
 lemma target_subset_preimage_source : e.target ⊆ e.symm ⁻¹' e.source :=
-λx hx, e.map_target hx
+e.symm_maps_to
 
 /-- Two local equivs that have the same `source`, same `to_fun` and same `inv_fun`, coincide. -/
 @[ext]
@@ -382,10 +348,10 @@ lemma trans_source' : (e.trans e').source = e.source ∩ e ⁻¹' (e.target ∩ 
 by mfld_set_tac
 
 lemma trans_source'' : (e.trans e').source = e.symm '' (e.target ∩ e'.source) :=
-by rw [e.trans_source', inter_comm e.target, e.symm_image_inter_target_eq]
+by rw [e.trans_source', e.symm_image_target_inter_eq]
 
 lemma image_trans_source : e '' (e.trans e').source = e.target ∩ e'.source :=
-image_source_eq_target (local_equiv.symm (local_equiv.restr (local_equiv.symm e) (e'.source)))
+(e.symm.restr e'.source).symm.image_source_eq_target
 
 @[simp, mfld_simps] lemma trans_target :
   (e.trans e').target = e'.target ∩ e'.symm ⁻¹' e.target := rfl
@@ -486,15 +452,7 @@ end
 /-- Preimages are respected by equivalence -/
 lemma eq_on_source.source_inter_preimage_eq {e e' : local_equiv α β} (he : e ≈ e') (s : set β) :
   e.source ∩ e ⁻¹' s = e'.source ∩ e' ⁻¹' s :=
-begin
-  ext x,
-  simp only [mem_inter_eq, mem_preimage],
-  split,
-  { assume hx,
-    rwa [← he.2 hx.1, ← he.source_eq] },
-  { assume hx,
-    rwa [← (setoid.symm he).2 hx.1, he.source_eq] }
-end
+by rw [he.eq_on.inter_preimage_eq, he.source_eq]
 
 /-- Composition of a local equiv and its inverse is equivalent to the restriction of the identity
 to the source -/
