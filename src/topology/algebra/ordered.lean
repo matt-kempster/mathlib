@@ -1679,17 +1679,9 @@ lemma is_lub.nhds_within_ne_bot {a : α} {s : set α} (ha : is_lub s a) (hs : s.
   ne_bot (𝓝[s] a) :=
 mem_closure_iff_nhds_within_ne_bot.1 (ha.mem_closure hs)
 
-lemma is_lub.nhds_within_ne_bot' {a : α} {s : set α} (ha : is_lub s a) (hs : s.nonempty) :
-  ne_bot (𝓝[s ∩ Iic a] a) :=
-(ha.nhds_within_ne_bot hs).mono $ nhds_within_mono _ (λ x hx, ⟨hx, ha.1 hx⟩)
-
 lemma is_glb.nhds_within_ne_bot : ∀ {a : α} {s : set α}, is_glb s a → s.nonempty →
   ne_bot (𝓝[s] a) :=
 @is_lub.nhds_within_ne_bot (order_dual α) _ _ _
-
-lemma is_glb.nhds_within_ne_bot' : ∀ {a : α} {s : set α}, is_glb s a → s.nonempty →
-  ne_bot (𝓝[s ∩ Ici a] a) :=
-@is_lub.nhds_within_ne_bot' (order_dual α) _ _ _
 
 lemma is_lub_of_mem_nhds {s : set α} {a : α} {f : filter α}
   (hsa : a ∈ upper_bounds s) (hsf : s ∈ f) [ne_bot (f ⊓ 𝓝 a)] : is_lub s a :=
@@ -2303,45 +2295,29 @@ begin
   { exact (or.inr $ or.inr $ or.inr hs) }
 end
 
-/-- A "continuous induction principle" for a closed interval: if a set `s` and an interval `[a, b]`
-satisfy the following assumptins:
-
-* `a ∈ s` and `a ≤ b`;
-* for every `c ∈ [a, b]`, if `c` is the least upper bound of `s ∩ [a, b]`, then `c = b` and `c ∈ s`.
-
-Then `b ∈ s`. -/
-lemma mem_of_le_of_lub {a b : α} {s : set α}
-  (ha : a ∈ s) (hab : a ≤ b) (hlub : ∀ c ∈ Icc a b, is_lub (s ∩ Icc a b) c → (c = b ∧ c ∈ s)) :
-  b ∈ s :=
-begin
-  set S := s ∩ Icc a b,
-  have Sbd : bdd_above S := bdd_above_Icc.inter_of_right,
-  replace ha : a ∈ S := ⟨ha, le_rfl, hab⟩,
-  have Sne : S.nonempty := ⟨a, ha⟩,
-  set c := Sup (s ∩ Icc a b),
-  have hc : is_lub S c, from is_lub_cSup Sne Sbd,
-  have hc' : c ∈ Icc a b, from ⟨hc.1 ha, hc.2 (λ x hx, hx.2.2)⟩,
-  simp only [← (hlub c hc' hc).1, (hlub c hc' hc).2]
-end
-
 /-- A "continuous induction principle" for a closed interval: if a set `s` meets `[a, b]`
 on a closed subset, contains `a`, and the set `s ∩ [a, b)` has no maximal point, then `b ∈ s`. -/
-lemma is_closed.mem_of_le_of_forall_exists_gt {a b : α} {s : set α} (hs : is_closed (s ∩ Icc a b))
+lemma is_closed.mem_of_ge_of_forall_exists_gt {a b : α} {s : set α} (hs : is_closed (s ∩ Icc a b))
   (ha : a ∈ s) (hab : a ≤ b) (hgt : ∀ x ∈ s ∩ Ico a b, (s ∩ Ioc x b).nonempty) :
   b ∈ s :=
 begin
-  refine mem_of_le_of_lub ha hab (λ c hc hcs, _),
-  have hc' : c ∈ s ∩ Icc a b, from hs.is_lub_mem hcs ⟨a, ha, le_rfl, hab⟩,
-  refine ⟨hc'.2.2.eq_or_lt.resolve_right $ λ hcb, _, hc'.1⟩,
-  rcases hgt c ⟨hc'.1, hc'.2.1, hcb⟩ with ⟨x, hx⟩,
-  exact (hcs.1 ⟨hx.1, hc.1.trans hx.2.1.le, hx.2.2⟩).not_lt hx.2.1
+  let S := s ∩ Icc a b,
+  replace ha : a ∈ S, from ⟨ha, left_mem_Icc.2 hab⟩,
+  have Sbd : bdd_above S, from ⟨b, λ z hz, hz.2.2⟩,
+  let c := Sup (s ∩ Icc a b),
+  have c_mem : c ∈ S, from hs.cSup_mem ⟨_, ha⟩ Sbd,
+  have c_le : c ≤ b, from cSup_le ⟨_, ha⟩ (λ x hx, hx.2.2),
+  cases eq_or_lt_of_le c_le with hc hc, from hc ▸ c_mem.1,
+  exfalso,
+  rcases hgt c ⟨c_mem.1, c_mem.2.1, hc⟩ with ⟨x, xs, cx, xb⟩,
+  exact not_lt_of_le (le_cSup Sbd ⟨xs, le_trans (le_cSup Sbd ha) (le_of_lt cx), xb⟩) cx
 end
 
 /-- A "continuous induction principle" for a closed interval: if a set `s` meets `[a, b]`
 on a closed subset, contains `a`, and for any `a ≤ x < y ≤ b`, `x ∈ s`, the set `s ∩ (x, y]`
 is not empty, then `[a, b] ⊆ s`. -/
 lemma is_closed.Icc_subset_of_forall_exists_gt {a b : α} {s : set α} (hs : is_closed (s ∩ Icc a b))
-  (ha : a ∈ s) (hgt : ∀ x ∈ s ∩ Ico a b, ∀ y ∈ Ioc x b, (s ∩ Ioc x y).nonempty) :
+  (ha : a ∈ s) (hgt : ∀ x ∈ s ∩ Ico a b, ∀ y ∈ Ioi x,  (s ∩ Ioc x y).nonempty) :
   Icc a b ⊆ s :=
 begin
   assume y hy,
@@ -2351,24 +2327,8 @@ begin
     rw [inter_assoc],
     congr,
     exact (inter_eq_self_of_subset_right $ Icc_subset_Icc_right hy.2).symm },
-  exact is_closed.mem_of_le_of_forall_exists_gt this ha hy.1
-    (λ x hx, hgt x ⟨hx.1, Ico_subset_Ico_right hy.2 hx.2⟩ y ⟨hx.2.2, hy.2⟩)
-end
-
-lemma is_closed.Icc_subset_of_forall_mem_nhds_within' {a b : α} {s : set α}
-  (hs : is_closed (s ∩ Icc a b)) (ha : a ∈ s)
-  (hgt : ∀ x ∈ s ∩ Ico a b, s ∈ 𝓝[Ioi x] x)
-  (h : ∀ (x ∈ s ∩ Ico a b) (y ∈ Ioc x b), Ioo x y = ∅ → y ∈ s) :
-  Icc a b ⊆ s :=
-begin
-  apply hs.Icc_subset_of_forall_exists_gt ha,
-  rintros x hx y hyxb,
-  have : s ∩ Ioc x y ∈ 𝓝[Ioi x] x,
-    from inter_mem_sets (hgt x hx) (Ioc_mem_nhds_within_Ioi ⟨le_refl _, hyxb.1⟩),
-  rcases (mem_nhds_within_Ioi_iff_exists_mem_Ioc_Ioo_subset hyxb.1).1 this
-    with ⟨z, hz, hzs⟩,
-  refine (eq_empty_or_nonempty (Ioo x z)).elim (λ hz', _) (λ h, h.mono hzs),
-  refine ⟨z, h x hx z ⟨hz.1, hz.2.trans hyxb.2⟩ hz', hz⟩,
+  exact is_closed.mem_of_ge_of_forall_exists_gt this ha hy.1
+    (λ x hx, hgt x ⟨hx.1, Ico_subset_Ico_right hy.2 hx.2⟩ y hx.2.2)
 end
 
 section densely_ordered
@@ -2378,12 +2338,17 @@ variables [densely_ordered α] {a b : α}
 /-- A "continuous induction principle" for a closed interval: if a set `s` meets `[a, b]`
 on a closed subset, contains `a`, and for any `x ∈ s ∩ [a, b)` the set `s` includes some open
 neighborhood of `x` within `(x, +∞)`, then `[a, b] ⊆ s`. -/
-lemma is_closed.Icc_subset_of_forall_mem_nhds_within {s : set α}
+lemma is_closed.Icc_subset_of_forall_mem_nhds_within {a b : α} {s : set α}
   (hs : is_closed (s ∩ Icc a b)) (ha : a ∈ s)
   (hgt : ∀ x ∈ s ∩ Ico a b, s ∈ 𝓝[Ioi x] x) :
   Icc a b ⊆ s :=
-hs.Icc_subset_of_forall_mem_nhds_within' ha hgt $ λ x hx y hy hxy,
-  ((nonempty_Ioo.2 hy.1).ne_empty hxy).elim
+begin
+  apply hs.Icc_subset_of_forall_exists_gt ha,
+  rintros x ⟨hxs, hxab⟩ y hyxb,
+  have : s ∩ Ioc x y ∈ 𝓝[Ioi x] x,
+    from inter_mem_sets (hgt x ⟨hxs, hxab⟩) (Ioc_mem_nhds_within_Ioi ⟨le_refl _, hyxb⟩),
+  exact (nhds_within_Ioi_self_ne_bot' hxab.2).nonempty_of_mem this
+end
 
 /-- A closed interval in a densely ordered conditionally complete linear order is preconnected. -/
 lemma is_preconnected_Icc : is_preconnected (Icc a b) :=
@@ -2542,10 +2507,16 @@ begin
   { exact ((hsc.1 ⟨hy, hay⟩).not_lt hxy.1).elim },
 end
 
+/-- An unordered closed interval in a conditionally complete linear order is compact. -/
+lemma compact_interval (a b : α) : is_compact (interval a b) := compact_Icc _ _
+
 lemma compact_pi_Icc {ι : Type*} {α : ι → Type*} [Π i, conditionally_complete_linear_order (α i)]
   [Π i, topological_space (α i)] [Π i, order_topology (α i)] (a b : Π i, α i) :
   is_compact (Icc a b) :=
 pi_univ_Icc a b ▸ compact_univ_pi $ λ i, compact_Icc (a i) (b i)
+
+instance compact_space_Icc (a b : α) : compact_space (Icc a b) :=
+compact_iff_compact_space.mp (compact_Icc a b)
 
 instance compact_space_pi_Icc {ι : Type*} {α : ι → Type*}
   [Π i, conditionally_complete_linear_order (α i)] [Π i, topological_space (α i)]
