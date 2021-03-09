@@ -1058,6 +1058,13 @@ lemma ite_inter_of_inter_eq (t : set α) {s₁ s₂ s : set α} (h : s₁ ∩ s 
   t.ite s₁ s₂ ∩ s = s₁ ∩ s :=
 by rw [← ite_inter, ← h, ite_same]
 
+lemma subset_ite {t s s' u : set α} : u ⊆ t.ite s s' ↔ u ∩ t ⊆ s ∧ u \ t ⊆ s' :=
+begin
+  simp only [subset_def, ← forall_and_distrib],
+  refine forall_congr (λ x, _),
+  by_cases hx : x ∈ t; simp [*, set.ite]
+end
+
 /-! ### Inverse image -/
 
 /-- The preimage of `s : set β` by `f : α → β`, written `f ⁻¹' s`,

@@ -289,6 +289,8 @@ end
 
 end is_image
 
+lemma is_image_source_target : e.is_image e.source e.target := λ x hx, by simp [hx]
+
 lemma image_source_inter_eq' (s : set α) :
   e '' (e.source ∩ s) = e.target ∩ e.symm ⁻¹' s :=
 by rw [inter_comm, e.left_inv_on.image_inter', image_source_eq_target, inter_comm]
@@ -615,6 +617,37 @@ lemma symm_piecewise (e e' : local_equiv α β) {s : set α} {t : set β}
   (H : e.is_image s t) (H' : e'.is_image s t) :
   (e.piecewise e' s t H H').symm = e.symm.piecewise e'.symm t s H.symm H'.symm :=
 rfl
+
+@[simps] def disjoint_union (e e' : local_equiv α β) (hs : disjoint e.source e'.source)
+  (ht : disjoint e.target e'.target) [∀ x, decidable (x ∈ e.source)]
+  [∀ y, decidable (y ∈ e.target)] :
+  local_equiv α β :=
+{ to_fun := e.source.piecewise e e',
+  inv_fun := e.target.piecewise e.symm e'.symm,
+  source := e.source ∪ e'.source,
+  target := e.target ∪ e'.target,
+  map_source' := λ x,
+    have x ∈ e'.source → x ∉ e.source, from λ h' h, hs ⟨h, h'⟩,
+    by rintro (he|he'); simp *,
+  map_target' := λ y,
+    have y ∈ e'.target → y ∉ e.target, from λ h' h, ht ⟨h, h'⟩,
+    by rintro (he|he'); simp *,
+  left_inv' := λ x,
+    begin
+      rintro (he|he'),
+      { simp * },
+      { have : x ∉ e.source ∧ e' x ∉ e.target,
+          from ⟨λ h, hs ⟨h, he'⟩, λ h, ht ⟨h, e'.map_source he'⟩⟩,
+        simp * }
+    end,
+  right_inv' := λ y,
+    begin
+      rintro (he|he'),
+      { simp * },
+      { have : y ∉ e.target ∧ e'.symm y ∉ e.source,
+          from ⟨λ h, ht ⟨h, he'⟩, λ h, hs ⟨h, e'.map_target he'⟩⟩,
+        simp * }
+    end }
 
 end local_equiv
 

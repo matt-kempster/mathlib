@@ -468,11 +468,22 @@ lemma is_topological_fiber_bundle.comap (h : is_topological_fiber_bundle F proj)
 
 end comap
 
-section piecewise
-
 lemma bundle_trivialization.is_image_preimage_prod (e : bundle_trivialization F proj) (s : set B) :
   e.to_local_homeomorph.is_image (proj ⁻¹' s) (s.prod univ) :=
 λ x hx, by simp [e.coe_fst', hx]
+
+def bundle_trivialization.restr_open (e : bundle_trivialization F proj) (s : set B)
+  (hs : is_open s) :
+  bundle_trivialization F proj :=
+{ to_local_homeomorph := ((e.is_image_preimage_prod s).symm.restr
+    (is_open_inter e.open_target (hs.prod is_open_univ))).symm,
+  base_set := e.base_set ∩ s,
+  open_base_set := is_open_inter e.open_base_set hs,
+  source_eq := by simp [e.source_eq],
+  target_eq := by simp [e.target_eq, prod_univ],
+  proj_to_fun := λ p hp, e.proj_to_fun p hp.1 }
+
+section piecewise
 
 lemma bundle_trivialization.frontier_preimage (e : bundle_trivialization F proj) (s : set B) :
   e.source ∩ frontier (proj ⁻¹' s) = proj ⁻¹' (e.base_set ∩ frontier s) :=
@@ -518,17 +529,72 @@ e.piecewise_le_of_eq (e'.trans_fiber_homeomorph (e'.coord_change_homeomorph e He
     { simp [e.coe_fst', e'.coe_fst', *] },
     { simp [e'.coord_change_apply_snd, *] } }
 
+def bundle_trivialization.disjoint_union (e e' : bundle_trivialization F proj)
+  (H : disjoint e.base_set e'.base_set) [∀ x, decidable (x ∈ e.source)]
+  [∀ x, decidable (x ∈ e.target)] :
+  bundle_trivialization F proj :=
+{ to_local_homeomorph := e.to_local_homeomorph.disjoint_union e'.to_local_homeomorph
+    (λ x hx, by { rw [e.source_eq, e'.source_eq] at hx, exact H hx })
+    (λ x hx, by { rw [e.target_eq, e'.target_eq] at hx, exact H ⟨hx.1.1, hx.2.1⟩ }),
+  base_set := e.base_set ∪ e'.base_set,
+  open_base_set := is_open_union e.open_base_set e'.open_base_set,
+  source_eq := congr_arg2 (∪) e.source_eq e'.source_eq,
+  target_eq := (congr_arg2 (∪) e.target_eq e'.target_eq).trans union_prod.symm,
+  proj_to_fun :=
+    begin
+      rintro p (hp|hp'),
+      { show (e.source.piecewise e e' p).1 = proj p,
+        rw [piecewise_eq_of_mem, e.coe_fst]; exact hp },
+      { show (e.source.piecewise e e' p).1 = proj p,
+        rw [piecewise_eq_of_not_mem, e'.coe_fst hp'],
+        simp only [e.source_eq, e'.source_eq] at hp' ⊢,
+        exact λ h, H ⟨h, hp'⟩ }
+    end }
+
 lemma is_topological_fiber_bundle.exists_trivialization_Icc_subset
   [conditionally_complete_linear_order B] [order_topology B]
   (h : is_topological_fiber_bundle F proj) (a b : B) :
   ∃ e : bundle_trivialization F proj, Icc a b ⊆ e.base_set :=
 begin
-  rcases h a with ⟨ea, ha⟩,
+  classical,
+  rcases h a with ⟨ea, hea⟩,
   cases le_or_lt a b with hab hab; [skip, exact ⟨ea, by simp *⟩],
-  refine Icc_induction_of_Sup_closed_of_forall_exists_gt _ hab _ _,
-  { exact ⟨ea, by simp [ha]⟩ },
-  { intros c hc hce,
-     }
+  set s : set B := {x ∈ Icc a b | ∃ e : bundle_trivialization F proj, Icc a x ⊆ e.base_set},
+  have ha : a ∈ s, from ⟨left_mem_Icc.2 hab, ea, by simp [hea]⟩,
+  have sne : s.nonempty := ⟨a, ha⟩,
+  have hsb : b ∈ upper_bounds s, from λ x hx, hx.1.2,
+  have sbd : bdd_above s := ⟨b, hsb⟩,
+  set c := Sup s,
+  have hsc : is_lub s c, from is_lub_cSup sne sbd,
+  have hc : c ∈ Icc a b, from ⟨hsc.1 ha, hsc.2 hsb⟩,
+  obtain ⟨-, ec, hec⟩ : c ∈ s,
+  { cases hc.1.eq_or_lt with heq hlt, { rwa ← heq },
+    refine ⟨hc, _⟩,
+    rcases h c with ⟨ec, hc⟩,
+    rcases (mem_nhds_within_Iic_iff_exists_mem_Ico_Ioc_subset hlt).1
+      (mem_nhds_within_of_mem_nhds $ mem_nhds_sets ec.open_base_set hc)
+      with ⟨c', hc', hc'e⟩,
+    rcases hsc.exists_between hc'.2 with ⟨d, ⟨hdab, ead, had⟩, hd⟩,
+    refine ⟨ead.piecewise_le ec d (had ⟨hdab.1, le_rfl⟩) (hc'e hd), subset_ite.2 _⟩,
+    refine ⟨λ x hx, had ⟨hx.1.1, hx.2⟩, λ x hx, hc'e ⟨hd.1.trans (not_le.1 hx.2), hx.1.2⟩⟩ },
+  cases hc.2.eq_or_lt with heq hlt, { exact ⟨ec, heq ▸ hec⟩ },
+  suffices : ∃ (d ∈ Ioc c b) (e : bundle_trivialization F proj), Icc a d ⊆ e.base_set,
+  { rcases this with ⟨d, hdcb, hd⟩,
+    exact ((hsc.1 ⟨⟨hc.1.trans hdcb.1.le, hdcb.2⟩, hd⟩).not_lt hdcb.1).elim },
+  rcases (mem_nhds_within_Ici_iff_exists_mem_Ioc_Ico_subset hlt).1
+    (mem_nhds_within_of_mem_nhds $ mem_nhds_sets ec.open_base_set (hec ⟨hc.1, le_rfl⟩))
+    with ⟨d, hdcb, hd⟩,
+  have had : Ico a d ⊆ ec.base_set,
+    from subset.trans Ico_subset_Icc_union_Ico (union_subset hec hd),
+  by_cases he : disjoint (Iio d) (Ioi c),
+  { rcases h d with ⟨ed, hed⟩,
+    refine ⟨d, hdcb, (ec.restr_open (Iio d) is_open_Iio).disjoint_union
+      (ed.restr_open (Ioi c) is_open_Ioi) (he.mono (inter_subset_right _ _)
+        (inter_subset_right _ _)), λ x hx, _⟩,
+    rcases hx.2.eq_or_lt with rfl|hxd,
+    exacts [or.inr ⟨hed, hdcb.1⟩, or.inl ⟨had ⟨hx.1, hxd⟩, hxd⟩] },
+  { rw [disjoint_left] at he, push_neg at he, rcases he with ⟨d', hdd' : d' < d, hd'c⟩,
+    exact ⟨d', ⟨hd'c, hdd'.le.trans hdcb.2⟩, ec, subset.trans (Icc_subset_Ico_right hdd') had⟩ }
 end
 
 end piecewise

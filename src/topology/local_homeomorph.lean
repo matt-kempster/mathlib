@@ -357,7 +357,8 @@ lemma is_open_iff (h : e.is_image s t) :
   λ hs, h.preimage_eq' ▸ e.preimage_open_of_open hs⟩
 
 /-- Restrict a `local_homeomorph` to a pair of corresponding open sets. -/
-def restr (h : e.is_image s t) (hs : is_open (e.source ∩ s)) : local_homeomorph α β :=
+@[simps to_local_equiv] def restr (h : e.is_image s t) (hs : is_open (e.source ∩ s)) :
+  local_homeomorph α β :=
 { to_local_equiv := h.to_local_equiv.restr,
   open_source := hs,
   open_target := h.is_open_iff.1 hs,
@@ -750,6 +751,38 @@ rfl
       (H.frontier.inter_eq_of_inter_eq_of_eq_on H'.frontier Hs Heq)
       (H.frontier.symm_eq_on_of_inter_eq_of_eq_on H'.frontier Hs Heq) :=
 rfl
+
+def disjoint_union (e e' : local_homeomorph α β)
+  [∀ x, decidable (x ∈ e.source)] [∀ y, decidable (y ∈ e.target)]
+  (Hs : disjoint e.source e'.source) (Ht : disjoint e.target e'.target) :
+  local_homeomorph α β :=
+{ to_local_equiv := e.to_local_equiv.disjoint_union e'.to_local_equiv Hs Ht,
+  open_source := is_open_union e.open_source e'.open_source,
+  open_target := is_open_union e.open_target e'.open_target,
+  continuous_to_fun :=
+    begin
+      rintro x (he|he'),
+      { have : e.source.piecewise e e' =ᶠ[𝓝 x] e,
+          from (piecewise_eq_on e.source e e').eventually_eq_of_mem
+            (mem_nhds_sets e.open_source he),
+        exact ((e.continuous_at he).congr this.symm).continuous_within_at },
+      { have : e.source.piecewise e e' =ᶠ[𝓝 x] e',
+          from (piecewise_eq_on_compl e.source e e').eventually_eq_of_mem
+            (mem_nhds_sets_iff.2 ⟨e'.source, λ _, disjoint_right.1 Hs, e'.open_source, he'⟩),
+        exact ((e'.continuous_at he').congr this.symm).continuous_within_at }
+    end,
+  continuous_inv_fun :=
+    begin
+      rintro x (he|he'),
+      { have : e.target.piecewise e.symm e'.symm =ᶠ[𝓝 x] e.symm,
+          from (piecewise_eq_on e.target e.symm e'.symm).eventually_eq_of_mem
+            (mem_nhds_sets e.open_target he),
+        exact ((e.continuous_at_symm he).congr this.symm).continuous_within_at },
+      { have : e.target.piecewise e.symm e'.symm =ᶠ[𝓝 x] e'.symm,
+          from (piecewise_eq_on_compl e.target e.symm e'.symm).eventually_eq_of_mem
+            (mem_nhds_sets_iff.2 ⟨e'.target, λ _, disjoint_right.1 Ht, e'.open_target, he'⟩),
+        exact ((e'.continuous_at_symm he').congr this.symm).continuous_within_at }
+    end }
 
 end piecewise
 
