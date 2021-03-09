@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sébastien Gouëzel
 -/
 import topology.local_homeomorph
+import topology.algebra.ordered
 
 /-!
 # Fiber bundles
@@ -198,6 +199,18 @@ lemma bundle_trivialization.coe_fst' (e : bundle_trivialization F proj) {x : Z}
   (ex : proj x ∈ e.base_set) : (e x).1 = proj x :=
 e.coe_fst (e.mem_source.2 ex)
 
+lemma bundle_trivialization.mk_proj_snd (e : bundle_trivialization F proj) {x : Z}
+  (ex : x ∈ e.source) : (proj x, (e x).2) = e x :=
+prod.ext (e.coe_fst ex).symm rfl
+
+lemma bundle_trivialization.mk_proj_snd' (e : bundle_trivialization F proj) {x : Z}
+  (ex : proj x ∈ e.base_set) : (proj x, (e x).2) = e x :=
+prod.ext (e.coe_fst' ex).symm rfl
+
+protected lemma bundle_trivialization.eq_on (e : bundle_trivialization F proj) :
+  eq_on (prod.fst ∘ e) proj e.source :=
+λ x hx, e.coe_fst hx
+
 lemma bundle_trivialization.proj_symm_apply (e : bundle_trivialization F proj) {x : B × F}
   (hx : x ∈ e.target) : proj (e.to_local_homeomorph.symm x) = x.1 :=
 begin
@@ -304,7 +317,94 @@ lemma is_topological_fiber_bundle.comp_homeomorph {Z' : Type*} [topological_spac
 λ x, let ⟨e, he⟩ := e x in
 ⟨e.comp_homeomorph h, by simpa [bundle_trivialization.comp_homeomorph] using he⟩
 
-section induced
+namespace bundle_trivialization
+
+def trans_fiber_homeomorph {F' : Type*} [topological_space F']
+  (e : bundle_trivialization F proj) (h : F ≃ₜ F') : bundle_trivialization F' proj :=
+{ to_local_homeomorph := e.to_local_homeomorph.trans
+    ((homeomorph.refl _).prod_congr h).to_local_homeomorph,
+  base_set := e.base_set,
+  open_base_set := e.open_base_set,
+  source_eq := by simp [e.source_eq],
+  target_eq := by { ext, simp [e.target_eq] },
+  proj_to_fun := λ p hp, have p ∈ e.source, by simpa using hp, by simp [this] }
+
+@[simp] lemma trans_fiber_homeomorph_apply {F' : Type*} [topological_space F']
+  (e : bundle_trivialization F proj) (h : F ≃ₜ F') (x : Z) :
+  e.trans_fiber_homeomorph h x = ((e x).1, h (e x).2) :=
+rfl
+
+def coord_change
+  (e₁ e₂ : bundle_trivialization F proj) (b : B) (x : F) : F :=
+(e₂ $ e₁.to_local_homeomorph.symm (b, x)).2
+
+lemma mk_coord_change
+  (e₁ e₂ : bundle_trivialization F proj) {b : B}
+  (h₁ : b ∈ e₁.base_set) (h₂ : b ∈ e₂.base_set) (x : F) :
+  (b, e₁.coord_change e₂ b x) = e₂ (e₁.to_local_homeomorph.symm (b, x)) :=
+begin
+  refine prod.ext _ rfl,
+  rw [e₂.coe_fst', ← e₁.coe_fst', e₁.apply_symm_apply' h₁],
+  { rwa [e₁.proj_symm_apply' h₁] },
+  { rwa [e₁.proj_symm_apply' h₁] }
+end
+
+lemma coord_change_apply_snd
+  (e₁ e₂ : bundle_trivialization F proj) {p : Z}
+  (h : proj p ∈ e₁.base_set) :
+  e₁.coord_change e₂ (proj p) (e₁ p).snd = (e₂ p).snd :=
+by rw [coord_change, e₁.symm_apply_mk_proj (e₁.mem_source.2 h)]
+
+lemma coord_change_same_apply
+  (e : bundle_trivialization F proj) {b : B} (h : b ∈ e.base_set) (x : F) :
+  e.coord_change e b x = x :=
+by rw [bundle_trivialization.coord_change, e.apply_symm_apply' h]
+
+lemma coord_change_same
+  (e : bundle_trivialization F proj) {b : B} (h : b ∈ e.base_set) :
+  e.coord_change e b = id :=
+funext $ e.coord_change_same_apply h
+
+lemma coord_change_coord_change
+  (e₁ e₂ e₃ : bundle_trivialization F proj) {b : B}
+  (h₁ : b ∈ e₁.base_set) (h₂ : b ∈ e₂.base_set) (h₃ : b ∈ e₃.base_set) (x : F) :
+  e₂.coord_change e₃ b (e₁.coord_change e₂ b x) = e₁.coord_change e₃ b x :=
+begin
+  rw [bundle_trivialization.coord_change, e₁.mk_coord_change _ h₁ h₂, ← e₂.coe_coe,
+    e₂.to_local_homeomorph.left_inv, bundle_trivialization.coord_change],
+  rwa [e₂.mem_source, e₁.proj_symm_apply' h₁]
+end
+
+lemma continuous_coord_change (e₁ e₂ : bundle_trivialization F proj) {b : B}
+  (h₁ : b ∈ e₁.base_set) (h₂ : b ∈ e₂.base_set) :
+  continuous (e₁.coord_change e₂ b) :=
+begin
+  refine continuous_snd.comp (e₂.to_local_homeomorph.continuous_on.comp_continuous
+    (e₁.to_local_homeomorph.continuous_on_symm.comp_continuous _ _) _),
+  { exact continuous_const.prod_mk continuous_id },
+  { exact λ x, e₁.mem_target.2 h₁ },
+  { intro x,
+    rwa [e₂.mem_source, e₁.proj_symm_apply' h₁] }
+end
+
+def coord_change_homeomorph
+  (e₁ e₂ : bundle_trivialization F proj) {b : B} (h₁ : b ∈ e₁.base_set) (h₂ : b ∈ e₂.base_set) :
+  F ≃ₜ F :=
+{ to_fun := e₁.coord_change e₂ b,
+  inv_fun := e₂.coord_change e₁ b,
+  left_inv := λ x, by simp only [*, coord_change_coord_change, coord_change_same_apply],
+  right_inv := λ x, by simp only [*, coord_change_coord_change, coord_change_same_apply],
+  continuous_to_fun := e₁.continuous_coord_change e₂ h₁ h₂,
+  continuous_inv_fun := e₂.continuous_coord_change e₁ h₂ h₁ }
+
+@[simp] lemma coord_change_homeomorph_coe
+  (e₁ e₂ : bundle_trivialization F proj) {b : B} (h₁ : b ∈ e₁.base_set) (h₂ : b ∈ e₂.base_set) :
+  ⇑(e₁.coord_change_homeomorph e₂ h₁ h₂) = e₁.coord_change e₂ b :=
+rfl
+
+end bundle_trivialization
+
+section comap
 
 open_locale classical
 
@@ -366,7 +466,72 @@ lemma is_topological_fiber_bundle.comap (h : is_topological_fiber_bundle F proj)
   is_topological_fiber_bundle F (λ x : {p : B' × Z | f p.1 = proj p.2}, (x : B' × Z).1) :=
 λ x, let ⟨e, he⟩ := h (f x) in ⟨e.comap f hf x he, he⟩
 
-end induced
+end comap
+
+section piecewise
+
+lemma bundle_trivialization.is_image_preimage_prod (e : bundle_trivialization F proj) (s : set B) :
+  e.to_local_homeomorph.is_image (proj ⁻¹' s) (s.prod univ) :=
+λ x hx, by simp [e.coe_fst', hx]
+
+lemma bundle_trivialization.frontier_preimage (e : bundle_trivialization F proj) (s : set B) :
+  e.source ∩ frontier (proj ⁻¹' s) = proj ⁻¹' (e.base_set ∩ frontier s) :=
+by rw [← (e.is_image_preimage_prod s).frontier.preimage_eq, frontier_prod_univ_eq,
+  (e.is_image_preimage_prod _).preimage_eq, e.source_eq, preimage_inter]
+
+def bundle_trivialization.piecewise (e e' : bundle_trivialization F proj) (s : set B)
+  [Π x, decidable (x ∈ proj ⁻¹' s)] [Π (y : B × F), decidable (y ∈ s.prod (univ : set F))]
+  (Hs : e.base_set ∩ frontier s = e'.base_set ∩ frontier s)
+  (Heq : eq_on e e' $ proj ⁻¹' (e.base_set ∩ frontier s)) :
+  bundle_trivialization F proj :=
+{ to_local_homeomorph := e.to_local_homeomorph.piecewise e'.to_local_homeomorph
+    (proj ⁻¹' s) (s.prod univ) (e.is_image_preimage_prod s) (e'.is_image_preimage_prod s)
+    (by rw [e.frontier_preimage, e'.frontier_preimage, Hs])
+    (by rwa e.frontier_preimage),
+  base_set := s.ite e.base_set e'.base_set,
+  open_base_set := e.open_base_set.ite e'.open_base_set Hs,
+  source_eq := by simp [e.source_eq, e'.source_eq],
+  target_eq := by simp [e.target_eq, e'.target_eq, prod_univ],
+  proj_to_fun := by rintro p (⟨he, hs⟩|⟨he, hs⟩); simp * }
+
+def bundle_trivialization.piecewise_le_of_eq [linear_order B] [order_topology B]
+  (e e' : bundle_trivialization F proj) (a : B)
+  [Π x, decidable (x ∈ proj ⁻¹' (Iic a))]
+  [Π (y : B × F), decidable (y ∈ (Iic a).prod (univ : set F))]
+  (He : a ∈ e.base_set) (He' : a ∈ e'.base_set)
+  (Heq : ∀ p, proj p = a → e p = e' p) :
+  bundle_trivialization F proj :=
+e.piecewise e' (Iic a)
+  (set.ext $ λ x, and.congr_left_iff.2 $ λ hx,
+    by simp [He, He', mem_singleton_iff.1 (frontier_Iic_subset _ hx)])
+  (λ p hp, Heq p $ frontier_Iic_subset _ hp.2)
+
+def bundle_trivialization.piecewise_le [linear_order B] [order_topology B]
+  (e e' : bundle_trivialization F proj) (a : B)
+  [Π x, decidable (x ∈ proj ⁻¹' (Iic a))]
+  [Π (y : B × F), decidable (y ∈ (Iic a).prod (univ : set F))]
+  (He : a ∈ e.base_set) (He' : a ∈ e'.base_set) :
+  bundle_trivialization F proj :=
+e.piecewise_le_of_eq (e'.trans_fiber_homeomorph (e'.coord_change_homeomorph e He' He))
+  a He He' $ by { unfreezingI {rintro p rfl },
+    ext1,
+    { simp [e.coe_fst', e'.coe_fst', *] },
+    { simp [e'.coord_change_apply_snd, *] } }
+
+lemma is_topological_fiber_bundle.exists_trivialization_Icc_subset
+  [conditionally_complete_linear_order B] [order_topology B]
+  (h : is_topological_fiber_bundle F proj) (a b : B) :
+  ∃ e : bundle_trivialization F proj, Icc a b ⊆ e.base_set :=
+begin
+  rcases h a with ⟨ea, ha⟩,
+  cases le_or_lt a b with hab hab; [skip, exact ⟨ea, by simp *⟩],
+  refine Icc_induction_of_Sup_closed_of_forall_exists_gt _ hab _ _,
+  { exact ⟨ea, by simp [ha]⟩ },
+  { intros c hc hce,
+     }
+end
+
+end piecewise
 
 end topological_fiber_bundle
 

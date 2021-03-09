@@ -675,9 +675,26 @@ begin
     (piecewise_eq_on_compl s f₁ f₂).symm.mono (inter_subset_right _ _)]
 end
 
+theorem eq_on_piecewise {f f' g : α → β} {t} :
+  eq_on (s.piecewise f f') g t ↔ eq_on f g (t ∩ s) ∧ eq_on f' g (t ∩ sᶜ) :=
+begin
+  simp only [eq_on, ← forall_and_distrib],
+  refine forall_congr (λ a, _), by_cases a ∈ s; simp *
+end
+
+theorem eq_on.piecewise_ite' {f f' g : α → β} {t t'} (h : eq_on f g (t ∩ s))
+  (h' : eq_on f' g (t' ∩ sᶜ)) :
+  eq_on (s.piecewise f f') g (s.ite t t') :=
+by simp [eq_on_piecewise, *]
+
+theorem eq_on.piecewise_ite {f f' g : α → β} {t t'} (h : eq_on f g t)
+  (h' : eq_on f' g t') :
+  eq_on (s.piecewise f f') g (s.ite t t') :=
+(h.mono (inter_subset_left _ _)).piecewise_ite' s (h'.mono (inter_subset_left _ _))
+
 lemma piecewise_preimage (f g : α → β) (t) :
-  s.piecewise f g ⁻¹' t = s ∩ f ⁻¹' t ∪ sᶜ ∩ g ⁻¹' t :=
-ext $ λ x, by by_cases x ∈ s; simp *
+  s.piecewise f g ⁻¹' t = s.ite (f ⁻¹' t) (g ⁻¹' t) :=
+ext $ λ x, by by_cases x ∈ s; simp [*, set.ite]
 
 lemma comp_piecewise (h : β → γ) {f g : α → β} {x : α} :
   h (s.piecewise f g x) = s.piecewise (h ∘ f) (h ∘ g) x :=
