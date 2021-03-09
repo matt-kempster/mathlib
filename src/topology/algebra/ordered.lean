@@ -1679,9 +1679,17 @@ lemma is_lub.nhds_within_ne_bot {a : α} {s : set α} (ha : is_lub s a) (hs : s.
   ne_bot (𝓝[s] a) :=
 mem_closure_iff_nhds_within_ne_bot.1 (ha.mem_closure hs)
 
+lemma is_lub.nhds_within_ne_bot' {a : α} {s : set α} (ha : is_lub s a) (hs : s.nonempty) :
+  ne_bot (𝓝[s ∩ Iic a] a) :=
+(ha.nhds_within_ne_bot hs).mono $ nhds_within_mono _ (λ x hx, ⟨hx, ha.1 hx⟩)
+
 lemma is_glb.nhds_within_ne_bot : ∀ {a : α} {s : set α}, is_glb s a → s.nonempty →
   ne_bot (𝓝[s] a) :=
 @is_lub.nhds_within_ne_bot (order_dual α) _ _ _
+
+lemma is_glb.nhds_within_ne_bot' : ∀ {a : α} {s : set α}, is_glb s a → s.nonempty →
+  ne_bot (𝓝[s ∩ Ici a] a) :=
+@is_lub.nhds_within_ne_bot' (order_dual α) _ _ _
 
 lemma is_lub_of_mem_nhds {s : set α} {a : α} {f : filter α}
   (hsa : a ∈ upper_bounds s) (hsf : s ∈ f) [ne_bot (f ⊓ 𝓝 a)] : is_lub s a :=
@@ -2295,40 +2303,26 @@ begin
   { exact (or.inr $ or.inr $ or.inr hs) }
 end
 
-lemma mem_of_le_of_Sup_closed_of_forall_exists_gt {a b : α} {s : set α}
-  (ha : a ∈ s) (hab : a ≤ b) (hsup : ∀ c ∈ Ioc a b, (∃ᶠ x in 𝓝[Iic c] c, x ∈ s) → c ∈ s)
-  (hgt : ∀ x ∈ s ∩ Ico a b, (s ∩ Ioc x b).nonempty) :
+/-- A "continuous induction principle" for a closed interval: if a set `s` and an interval `[a, b]`
+satisfy the following assumptins:
+
+* `a ∈ s` and `a ≤ b`;
+* for every `c ∈ [a, b]`, if `c` is the least upper bound of `s ∩ [a, b]`, then `c = b` and `c ∈ s`.
+
+Then `b ∈ s`. -/
+lemma mem_of_le_of_lub {a b : α} {s : set α}
+  (ha : a ∈ s) (hab : a ≤ b) (hlub : ∀ c ∈ Icc a b, is_lub (s ∩ Icc a b) c → (c = b ∧ c ∈ s)) :
   b ∈ s :=
 begin
-  rcases hab.eq_or_lt with rfl|hab, { exact ha },
-  by_contra hb,
-  let S := s ∩ Ico a b,
-  replace hgt : ∀ x ∈ S, (s ∩ Ioo x b).nonempty,
-  { refine λ x hx, (hgt x hx).mono (λ y hy, ⟨hy.1, hy.2.1, _⟩),
-    exact lt_of_le_of_ne hy.2.2 (ne_of_mem_of_not_mem hy.1 hb) },
-  replace ha : a ∈ S, from ⟨ha, left_mem_Ico.2 hab⟩,
-  have hSb : b ∈ upper_bounds S, from λ z hz, hz.2.2.le,
-  have Sbd : bdd_above S, from ⟨b, hSb⟩,
-  let c := Sup S,
-  have Hc : is_lub S c, from is_lub_cSup ⟨a, ha⟩ Sbd,
-  have hac : a < c,
-  { rcases hgt a ha with ⟨a', ha's, haa', ha'b⟩,
-    exact haa'.trans_le (Hc.1 ⟨ha's, haa'.le, ha'b⟩) },
-  have hcb : c ≤ b, from cSup_le ⟨_, ha⟩ hSb,
-  have hcs : c ∈ s,
-    from hsup _ ⟨hac, hcb⟩ ((Hc.frequently_mem ⟨a, ha⟩).mono (inter_subset_left _ _)),
-  rcases hcb.eq_or_lt with hcb|hcb, from hb (hcb ▸ hcs),
-  rcases hgt c ⟨hcs, hac.le, hcb⟩ with ⟨x, xs, cx, xb⟩,
-  exact (cx.not_le $ Hc.1 ⟨xs, (hac.trans cx).le, xb⟩).elim,
+  set S := s ∩ Icc a b,
+  have Sbd : bdd_above S := bdd_above_Icc.inter_of_right,
+  replace ha : a ∈ S := ⟨ha, le_rfl, hab⟩,
+  have Sne : S.nonempty := ⟨a, ha⟩,
+  set c := Sup (s ∩ Icc a b),
+  have hc : is_lub S c, from is_lub_cSup Sne Sbd,
+  have hc' : c ∈ Icc a b, from ⟨hc.1 ha, hc.2 (λ x hx, hx.2.2)⟩,
+  simp only [← (hlub c hc' hc).1, (hlub c hc' hc).2]
 end
-
-@[elab_as_eliminator]
-lemma Icc_induction_of_Sup_closed_of_forall_exists_gt {a b : α} {p : α → Prop}
-  (ha : p a) (hab : a ≤ b) (hsup : ∀ c ∈ Ioc a b, (∃ᶠ x in 𝓝[Iic c] c, p x) → p c)
-  (hgt : ∀ x, p x → x ∈ Ico a b → ∃ y ∈ Ioc x b, p y) :
-  p b :=
-mem_of_le_of_Sup_closed_of_forall_exists_gt ha hab hsup $ λ x hx,
-  let ⟨y, hy, hpy⟩ := hgt x hx.1 hx.2 in ⟨y, hpy, hy⟩
 
 /-- A "continuous induction principle" for a closed interval: if a set `s` meets `[a, b]`
 on a closed subset, contains `a`, and the set `s ∩ [a, b)` has no maximal point, then `b ∈ s`. -/
@@ -2336,9 +2330,11 @@ lemma is_closed.mem_of_le_of_forall_exists_gt {a b : α} {s : set α} (hs : is_c
   (ha : a ∈ s) (hab : a ≤ b) (hgt : ∀ x ∈ s ∩ Ico a b, (s ∩ Ioc x b).nonempty) :
   b ∈ s :=
 begin
-  refine mem_of_le_of_Sup_closed_of_forall_exists_gt ha hab _  hgt,
-  refine (λ c hc hcs, (hs.closure_subset $ frequently.mem_closure _).1),
-  exact (hcs.and_eventually $ Icc_mem_nhds_within_Iic hc).filter_mono inf_le_left
+  refine mem_of_le_of_lub ha hab (λ c hc hcs, _),
+  have hc' : c ∈ s ∩ Icc a b, from hs.is_lub_mem hcs ⟨a, ha, le_rfl, hab⟩,
+  refine ⟨hc'.2.2.eq_or_lt.resolve_right $ λ hcb, _, hc'.1⟩,
+  rcases hgt c ⟨hc'.1, hc'.2.1, hcb⟩ with ⟨x, hx⟩,
+  exact (hcs.1 ⟨hx.1, hc.1.trans hx.2.1.le, hx.2.2⟩).not_lt hx.2.1
 end
 
 /-- A "continuous induction principle" for a closed interval: if a set `s` meets `[a, b]`
@@ -2502,6 +2498,7 @@ lemma continuous_on.surj_on_of_tendsto' {f : α → β} {s : set α} [ord_connec
 
 end densely_ordered
 
+/-- Closed interval in a conditionally complete linear order is compact. -/
 lemma compact_Icc (a b : α) : is_compact (Icc a b) :=
 begin
   cases le_or_lt a b with hab hab, swap, { simp [hab] },
@@ -2510,29 +2507,39 @@ begin
   rw [le_principal_iff],
   have hpt : ∀ x ∈ Icc a b, {x} ∉ f,
     from λ x hx hxf, hf x hx ((le_pure_iff.2 hxf).trans (pure_le_nhds x)),
-  refine Icc_induction_of_Sup_closed_of_forall_exists_gt _ hab _ _,
-  { rw Icc_self,
-    exact hpt a ⟨le_rfl, hab⟩ },
-  { refine λ c hc hcf hcf', hf c (Ioc_subset_Icc_self hc) (λ U hU, _),
-    rcases (mem_nhds_within_Iic_iff_exists_Ioc_subset' hc.1).1 (mem_nhds_within_of_mem_nhds hU)
+  set s := {x ∈ Icc a b | Icc a x ∉ f},
+  have hsb : b ∈ upper_bounds s, from λ x hx, hx.1.2,
+  have sbd : bdd_above s, from ⟨b, hsb⟩,
+  have ha : a ∈ s, by simp [hpt, hab],
+  rcases hab.eq_or_lt with rfl|hlt, { exact ha.2 },
+  set c := Sup s,
+  have hsc : is_lub s c, from is_lub_cSup ⟨a, ha⟩ sbd,
+  have hc : c ∈ Icc a b, from ⟨hsc.1 ha, hsc.2 hsb⟩,
+  specialize hf c hc,
+  have hcs : c ∈ s,
+  { cases hc.1.eq_or_lt with heq hlt, { rwa ← heq },
+    refine ⟨hc, λ hcf, hf (λ U hU, _)⟩,
+    rcases (mem_nhds_within_Iic_iff_exists_Ioc_subset' hlt).1 (mem_nhds_within_of_mem_nhds hU)
       with ⟨x, hxc, hxU⟩,
-    rcases (hcf.and_eventually (Ioc_mem_nhds_within_Iic ⟨hxc, le_rfl⟩)).exists with ⟨y, hyf, hy⟩,
-    suffices : Ioc x c ∈ f, from mem_sets_of_superset this hxU,
-    clear_dependent U,
-    refine mem_sets_of_superset (f.diff_mem_iff.2 ⟨hcf', hyf⟩) (diff_subset_iff.2 _),
-    exact subset.trans Icc_subset_Icc_union_Ioc (union_subset_union subset.rfl $ Ioc_subset_Ioc_left hy.1.le) },
-  { intros x hxf hx,
-    specialize hf x ⟨hx.1, hx.2.le⟩,
-    contrapose! hf,
-    intros U hU,
-    rcases (mem_nhds_within_Ici_iff_exists_mem_Ioc_Ico_subset hx.2).1 (mem_nhds_within_of_mem_nhds hU)
-      with ⟨y, hxy, hyU⟩,
-    refine mem_sets_of_superset _ hyU, clear_dependent U,
-    specialize hf y hxy,
-    refine mem_sets_of_superset (f.diff_mem_iff.2 ⟨f.diff_mem_iff.2 ⟨hf, hxf⟩,
-      hpt y ⟨hx.1.trans hxy.1.le, hxy.2⟩⟩) _,
+    rcases ((hsc.frequently_mem ⟨a, ha⟩).and_eventually
+      (Ioc_mem_nhds_within_Iic ⟨hxc, le_rfl⟩)).exists
+      with ⟨y, ⟨hyab, hyf⟩, hy⟩,
+    refine mem_sets_of_superset(f.diff_mem_iff.2 ⟨hcf, hyf⟩) (subset.trans _ hxU),
+    rw diff_subset_iff,
+    exact subset.trans Icc_subset_Icc_union_Ioc
+      (union_subset_union subset.rfl $ Ioc_subset_Ioc_left hy.1.le) },
+  cases hc.2.eq_or_lt with heq hlt, { rw ← heq, exact hcs.2 },
+  contrapose! hf,
+  intros U hU,
+  rcases (mem_nhds_within_Ici_iff_exists_mem_Ioc_Ico_subset hlt).1 (mem_nhds_within_of_mem_nhds hU)
+    with ⟨y, hxy, hyU⟩,
+  refine mem_sets_of_superset _ hyU, clear_dependent U,
+  have hy : y ∈ Icc a b, from ⟨hc.1.trans hxy.1.le, hxy.2⟩,
+  by_cases hay : Icc a y ∈ f,
+  { refine mem_sets_of_superset (f.diff_mem_iff.2 ⟨f.diff_mem_iff.2 ⟨hay, hcs.2⟩, hpt y hy⟩) _,
     rw [diff_subset_iff, union_comm, Ico_union_right hxy.1.le, diff_subset_iff],
-    exact Icc_subset_Icc_union_Icc }
+    exact Icc_subset_Icc_union_Icc },
+  { exact ((hsc.1 ⟨hy, hay⟩).not_lt hxy.1).elim },
 end
 
 lemma compact_pi_Icc {ι : Type*} {α : ι → Type*} [Π i, conditionally_complete_linear_order (α i)]
