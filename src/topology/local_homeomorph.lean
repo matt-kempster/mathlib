@@ -35,6 +35,11 @@ Most statements are copied from their local_equiv versions, although some care i
 especially when restricting to subsets, as these should be open subsets.
 
 For design notes, see `local_equiv.lean`.
+
+### Local coding conventions
+
+If a lemma deals with the intersection of a set with either source or target of a `local_equiv`,
+then it should use `e.source ∩ s` or `e.target ∩ t`, not `s ∩ e.source` or `t ∩ e.target`.
 -/
 
 open function set filter
@@ -785,6 +790,23 @@ def disjoint_union (e e' : local_homeomorph α β)
     end }
 
 end piecewise
+
+section pi
+
+variables {ι : Type*} [fintype ι] {Xi Yi : ι → Type*} [Π i, topological_space (Xi i)]
+  [Π i, topological_space (Yi i)] (ei : Π i, local_homeomorph (Xi i) (Yi i))
+
+/-- The product of a finite family of `local_homeomorph`s. -/
+@[simps to_local_equiv] def pi : local_homeomorph (Π i, Xi i) (Π i, Yi i) :=
+{ to_local_equiv := local_equiv.pi (λ i, (ei i).to_local_equiv),
+  open_source := is_open_set_pi finite_univ $ λ i hi, (ei i).open_source,
+  open_target := is_open_set_pi finite_univ $ λ i hi, (ei i).open_target,
+  continuous_to_fun := continuous_on_pi.2 $ λ i, (ei i).continuous_on.comp
+    (continuous_apply _).continuous_on (λ f hf, hf i trivial),
+  continuous_inv_fun := continuous_on_pi.2 $ λ i, (ei i).continuous_on_symm.comp
+    (continuous_apply _).continuous_on (λ f hf, hf i trivial) }
+
+end pi
 
 section continuity
 

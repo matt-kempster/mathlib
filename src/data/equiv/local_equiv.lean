@@ -57,6 +57,12 @@ an empty type and a nonempty type. Since empty types are not that useful, and si
 needs to talk about equal local equivs, this is not an issue in practice.
 Still, we introduce an equivalence relation `eq_on_source` that captures this right notion of
 equality, and show that many properties are invariant under this equivalence relation.
+
+### Local coding conventions
+
+If a lemma deals with the intersection of a set with either source or target of a `local_equiv`,
+then it should use `e.source ∩ s` or `e.target ∩ t`, not `s ∩ e.source` or `t ∩ e.target`.
+
 -/
 
 mk_simp_attribute mfld_simps "The simpset `mfld_simps` records several simp lemmas that are
@@ -648,6 +654,29 @@ rfl
           from ⟨λ h, ht ⟨h, he'⟩, λ h, hs ⟨h, e'.map_target he'⟩⟩,
         simp * }
     end }
+
+section pi
+
+variables {ι : Type*} {αi βi : ι → Type*} (ei : Π i, local_equiv (αi i) (βi i))
+
+/-- The product of a family of local equivs, as a local equiv on the pi type. -/
+@[simps source target] protected def pi : local_equiv (Π i, αi i) (Π i, βi i) :=
+{ to_fun := λ f i, ei i (f i),
+  inv_fun := λ f i, (ei i).symm (f i),
+  source := pi univ (λ i, (ei i).source),
+  target := pi univ (λ i, (ei i).target),
+  map_source' := λ f hf i hi, (ei i).map_source (hf i hi),
+  map_target' := λ f hf i hi, (ei i).map_target (hf i hi),
+  left_inv' := λ f hf, funext $ λ i, (ei i).left_inv (hf i trivial),
+  right_inv' := λ f hf, funext $ λ i, (ei i).right_inv (hf i trivial) }
+
+attribute [mfld_simps] pi_source pi_target
+
+@[simp, mfld_simps] lemma pi_coe : ⇑(local_equiv.pi ei) = λ (f : Π i, αi i) i, ei i (f i) := rfl
+@[simp, mfld_simps] lemma pi_symm :
+  (local_equiv.pi ei).symm = local_equiv.pi (λ i, (ei i).symm) := rfl
+
+end pi
 
 end local_equiv
 
