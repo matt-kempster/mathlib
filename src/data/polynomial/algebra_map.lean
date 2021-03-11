@@ -44,6 +44,17 @@ lemma C_eq_algebra_map {R : Type*} [comm_ring R] (r : R) :
   C r = algebra_map R (polynomial R) r :=
 rfl
 
+instance [nontrivial A] : nontrivial (subalgebra R (polynomial A)) :=
+⟨⟨⊥, ⊤, begin
+  rw [ne.def, subalgebra.ext_iff, not_forall],
+  refine ⟨X, _⟩,
+  simp only [algebra.mem_bot, not_exists, set.mem_range, iff_true, algebra.mem_top,
+    algebra_map_apply, not_forall],
+  intro x,
+  rw [ext_iff, not_forall],
+  refine ⟨1, _⟩,
+  simp [coeff_C],
+end⟩⟩
 
 @[simp]
 lemma alg_hom_eval₂_algebra_map
@@ -201,7 +212,7 @@ begin
   by_cases hf : f = 0,
   { simp [hf] },
   by_cases hi : i ∈ f.support,
-  { unfold polynomial.eval polynomial.eval₂ finsupp.sum id at dvd_eval,
+  { rw [eval, eval₂, sum_def] at dvd_eval,
     rw [←finset.insert_erase hi, finset.sum_insert (finset.not_mem_erase _ _)] at dvd_eval,
     refine (dvd_add_left _).mp dvd_eval,
     apply finset.dvd_sum,

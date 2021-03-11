@@ -2061,6 +2061,9 @@ set.subset.antisymm (snd_image_prod_subset _ _)
   $ λ y y_in, let ⟨x, x_in⟩ := hs in
     ⟨(x, y), ⟨x_in, y_in⟩, rfl⟩
 
+lemma prod_diff_prod : s.prod t \ s₁.prod t₁ = s.prod (t \ t₁) ∪ (s \ s₁).prod t :=
+by { ext x, by_cases h₁ : x.1 ∈ s₁; by_cases h₂ : x.2 ∈ t₁; simp * }
+
 /-- A product set is included in a product set if and only factors are included, or a factor of the
 first set is empty. -/
 lemma prod_subset_prod_iff :
@@ -2144,7 +2147,7 @@ lemma univ_pi_eq_empty_iff : pi univ t = ∅ ↔ ∃ i, t i = ∅ :=
 by simp [← not_nonempty_iff_eq_empty, univ_pi_nonempty_iff]
 
 @[simp] lemma range_dcomp {β : ι → Type*} (f : Π i, α i → β i) :
-  range (λ (g : Π i, α i) i, f i (g i)) = pi univ (λ i, range (f i)) :=
+  range (λ (g : Π i, α i), (λ i, f i (g i))) = pi univ (λ i, range (f i)) :=
 begin
   apply subset.antisymm,
   { rintro _ ⟨x, rfl⟩ i -,
@@ -2219,6 +2222,14 @@ end
   (λ f : Π i, α i, f i) '' pi univ t = t i :=
 eval_image_pi (mem_univ i) ht
 
+lemma eval_preimage {ι} {α : ι → Type*} {i : ι} {s : set (α i)} :
+  eval i ⁻¹' s = pi univ (update (λ i, univ) i s) :=
+by { ext x, simp [@forall_update_iff _ (λ i, set (α i)) _ _ _ _ (λ i' y, x i' ∈ y)] }
+
+lemma eval_preimage' {ι} {α : ι → Type*} {i : ι} {s : set (α i)} :
+  eval i ⁻¹' s = pi {i} (update (λ i, univ) i s) :=
+by { ext, simp }
+
 lemma update_preimage_pi {i : ι} {f : Π i, α i} (hi : i ∈ s)
   (hf : ∀ j ∈ s, j ≠ i → f j ∈ t j) : (update f i) ⁻¹' s.pi t = t i :=
 begin
@@ -2235,6 +2246,10 @@ update_preimage_pi (mem_univ i) (λ j _, hf j)
 
 lemma subset_pi_eval_image (s : set ι) (u : set (Π i, α i)) : u ⊆ pi s (λ i, eval i '' u) :=
 λ f hf i hi, ⟨f, hf, rfl⟩
+
+lemma univ_pi_ite (s : set ι) (t : Π i, set (α i)) :
+  pi univ (λ i, if i ∈ s then t i else univ) = s.pi t :=
+by { ext, simp_rw [mem_univ_pi], apply forall_congr, intro i, split_ifs; simp [h] }
 
 end pi
 
