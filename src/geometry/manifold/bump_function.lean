@@ -22,6 +22,21 @@ noncomputable theory
 
 variable (M)
 
+/-- Given a smooth manifold modelled on an inner product space `F`, `f : smooth_bump_function IF M`
+is a smooth function on `M` such that in the extended chart `e` at `f.c`
+
+* `f x = 1` in the closed ball of radius `f.r` centered at `f.c`;
+* `f x = 0` outside of the ball of radius `f.R` centered at `f.c`;
+* `0 ≤ f x ≤ 1` for all `x`.
+
+The structure contains data required to construct a function with these properties. The function
+is available as `⇑f` or `f x`. Formal statements of the properties listed above involve some
+(pre)images under `ext_chart_at IF f.c` and are given as lemmas in the `msmooth_bump_function`
+namespace; some of them require `F` to be finite dimensional, and some require `M` to be a Hausdorff
+space. If `M` is modelled on a finite dimensional normed space without an inner product, the user
+should use `msmooth_bump_function (IE.trans_equiv e) M`, where
+`e : E ≃L[ℝ] euclidean_space ℝ (fin $ findim ℝ E) :=
+  (continuous_linear_equiv.of_findim_eq findim_euclidean_space_fin.symm)`. -/
 structure msmooth_bump_function :=
 (c : M)
 (r R : ℝ)
@@ -30,10 +45,6 @@ structure msmooth_bump_function :=
 (closed_ball_subset : closed_ball (ext_chart_at IF c c) R ∩ range IF ⊆ (ext_chart_at IF c).target)
 
 variable {M}
-
-/-def msmooth_bump_function (x : M) (r R : ℝ) : M → ℝ :=
-indicator (ext_chart_at IF x).source
-  (smooth_bump_function (ext_chart_at IF x x) r R ∘ ext_chart_at IF x)-/
 
 namespace msmooth_bump_function
 
@@ -201,11 +212,26 @@ end
 
 end msmooth_bump_function
 
+/-- We say that a collection of `smooth_bump_function`s is a `smooth_bump_covering` of a set `s`
+subordinate to `U : M → set M`, if
+
+* `(f i).c ∈ s` for all `i`;
+* the family `λ i, support (f i)` is locally finite;
+* for each point `x ∈ s` there exists `i` such that `f i =ᶠ[𝓝 x] 1`;
+  in other words, `x` belongs to the interior of `{y | f i y = 1}`;
+* `closure (support (f i)) ⊆ U (f i).c` for all `i`.
+
+If `M` is a sigma-compact Hausdorff space, then a choice of `smooth_bump_covering` is available
+as `smooth_bump_covering.choice_set`, see also `smooth_bump_covering.choice` for the case
+`s = univ`.
+
+This covering can be used, e.g., to construct a partition of unity and to prove the weak
+Whitney embedding theorem. -/
 structure smooth_bump_covering (s : set M) (U : M → set M) :=
 (ι : Type uM)
 (e : E ≃L[ℝ] euclidean_space ℝ (fin $ findim ℝ E) :=
   (continuous_linear_equiv.of_findim_eq findim_euclidean_space_fin.symm))
-(to_fun : ι → msmooth_bump_function (IE.trans_diffeomorph e.to_diffeomorph) M)
+(to_fun : ι → msmooth_bump_function (IE.trans_equiv e) M)
 (c_mem' : ∀ i, (to_fun i).c ∈ s)
 (locally_finite' : locally_finite (λ i, support (to_fun i)))
 (eventually_eq_one' : ∀ x ∈ s, ∃ i, to_fun i =ᶠ[𝓝 x] 1)
@@ -213,7 +239,7 @@ structure smooth_bump_covering (s : set M) (U : M → set M) :=
 
 namespace smooth_bump_covering
 
-/-- Choice of a `smooth_bump_covering`. -/
+/-- Choice of a covering of a closed set `s` by supports of smooth bump functions. -/
 def choice_set [t2_space M] [sigma_compact_space M] (s : set M) (hs : is_closed s)
   (U : M → set M) (hU : ∀ x ∈ s, U x ∈ 𝓝 x) :
   smooth_bump_covering IE s U :=
@@ -287,6 +313,7 @@ begin
     ... ⊆ U (c i) : hcBR i }
 end
 
+/-- Choice of a covering of a manifold by supports of smooth bump functions. -/
 def choice [t2_space M] [sigma_compact_space M] (U : M → set M) (hU : ∀ x, U x ∈ 𝓝 x) :
   smooth_bump_covering IE univ U :=
 choice_set IE univ is_closed_univ U (λ x hx, hU x)
@@ -305,6 +332,7 @@ lemma mem_ext_chart_at_source_of_eq_one {i : f.ι} {x : M} (h : f i x = 1) :
   x ∈ (ext_chart_at IE (f i).c).source :=
 by { rw ext_chart_at_source, exact f.mem_chart_at_source_of_eq_one h }
 
+/-- Index of a bump function such that `f i =ᶠ[𝓝 x] 1`. -/
 def ind (x : M) (hx : x ∈ s) : f.ι := (f.eventually_eq_one' x hx).some
 
 lemma eventually_eq_one (x : M) (hx : x ∈ s) : f (f.ind x hx) =ᶠ[𝓝 x] 1 :=
@@ -327,21 +355,20 @@ f.mem_ext_chart_at_source_of_eq_one (f.apply_ind x hx)
 lemma closure_support_subset (i : f.ι) : closure (support $ f i) ⊆ U (f i).c :=
 f.closure_support_subset' i
 
-section compact
+section embedding
 
-variables [compact_space M]
-
-instance fintype_ι_of_compact : fintype f.ι :=
+instance fintype_ι_of_compact [compact_space M] : fintype f.ι :=
 f.locally_finite.fintype_of_compact $ λ i, (f i).nonempty_support
 
-variables [t2_space M]
+variables [t2_space M] [fintype f.ι]
 
+/-- Smooth embedding of `M` into `(E × ℝ) ^ f.ι`. -/
 def embedding_pi_tangent : C^∞⟮IE, M; 𝓘(ℝ, f.ι → (E × ℝ)), f.ι → (E × ℝ)⟯ :=
 { to_fun := λ x i, (f i x • ext_chart_at IE (f i).c x, f i x),
   times_cont_mdiff_to_fun := times_cont_mdiff_pi_space.2 $ λ i,
     ((f i).smooth_smul times_cont_mdiff_on_ext_chart_at).prod_mk_space ((f i).smooth) }
 
-@[simp] lemma embedding_pi_tangent_coe :
+local attribute [simp] lemma embedding_pi_tangent_coe :
   ⇑f.embedding_pi_tangent = λ x i, (f i x • ext_chart_at IE (f i).c x, f i x) :=
 rfl
 
@@ -355,6 +382,11 @@ begin
   have := f.mem_ext_chart_at_source_of_eq_one h₂.symm,
   exact (ext_chart_at IE (f _).c).inj_on (f.mem_ext_chart_at_ind_source x hx) this h₁
 end
+
+lemma embedding_pi_tangent_injective (f : smooth_bump_covering IE (univ : set M) U)
+  [fintype f.ι] :
+  injective f.embedding_pi_tangent :=
+injective_iff_inj_on_univ.2 f.embedding_pi_tangent_inj_on
 
 lemma comp_embedding_pi_tangent_mfderiv (x : M) (hx : x ∈ s) :
   ((continuous_linear_map.fst ℝ E ℝ).comp
@@ -382,5 +414,38 @@ begin
   exact linear_map.ker_le_ker_comp _ _
 end
 
-end compact
+lemma embedding_pi_tangent_injective_mfderiv (x : M) (hx : x ∈ s) :
+  injective (mfderiv IE 𝓘(ℝ, f.ι → (E × ℝ)) f.embedding_pi_tangent x) :=
+linear_map.ker_eq_bot.1 (f.embedding_pi_tangent_ker_mfderiv x hx)
+
+end embedding
+
+/-- Baby version of the Whitney weak embedding theorem: if `M` admits a finite covering by
+supports of bump functions, then for some `n` it can be embedded into the `n`-dimensional
+Euclidean space. -/
+lemma exists_embedding_findim [t2_space M] {U} (f : smooth_bump_covering IE (univ : set M) U)
+  [fintype f.ι] :
+  ∃ (n : ℕ) (e : M → euclidean_space ℝ (fin n)), smooth IE 𝓘(ℝ, euclidean_space ℝ (fin n)) e ∧
+    injective e ∧ ∀ x : M, injective (mfderiv IE 𝓘(ℝ, euclidean_space ℝ (fin n)) e x) :=
+begin
+  set F := euclidean_space ℝ (fin $ findim ℝ (f.ι → (E × ℝ))),
+  letI : finite_dimensional ℝ (E × ℝ) := by apply_instance,
+  set eEF : (f.ι → (E × ℝ)) ≃L[ℝ] F :=
+    continuous_linear_equiv.of_findim_eq findim_euclidean_space_fin.symm,
+  refine ⟨_, eEF ∘ f.embedding_pi_tangent,
+    eEF.to_diffeomorph.smooth.comp f.embedding_pi_tangent.smooth,
+    eEF.injective.comp f.embedding_pi_tangent_injective, λ x, _⟩,
+  rw [mfderiv_comp _ eEF.differentiable_at.mdifferentiable_at
+    f.embedding_pi_tangent.mdifferentiable_at, eEF.mfderiv_eq],
+  exact eEF.injective.comp (f.embedding_pi_tangent_injective_mfderiv _ trivial)
+end
+
 end smooth_bump_covering
+
+/-- Baby version of the Whitney weak embedding theorem: if `M` admits a finite covering by
+supports of bump functions, then for some `n` it can be embedded into the `n`-dimensional
+Euclidean space. -/
+lemma exists_embedding_findim_of_compact [t2_space M] [compact_space M] :
+  ∃ (n : ℕ) (e : M → euclidean_space ℝ (fin n)), smooth IE 𝓘(ℝ, euclidean_space ℝ (fin n)) e ∧
+    injective e ∧ ∀ x : M, injective (mfderiv IE 𝓘(ℝ, euclidean_space ℝ (fin n)) e x) :=
+(smooth_bump_covering.choice IE (λ _, univ) (λ x, univ_mem_sets)).exists_embedding_findim

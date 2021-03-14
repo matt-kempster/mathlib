@@ -109,6 +109,12 @@ end
 theorem fg_bot : (⊥ : submodule R M).fg :=
 ⟨∅, by rw [finset.coe_empty, span_empty]⟩
 
+theorem fg_span {s : set M} (hs : finite s) : fg (span R s) :=
+⟨hs.to_finset, by rw [hs.coe_to_finset]⟩
+
+theorem fg_span_singleton (x : M) : fg (R ∙ x) :=
+fg_span (finite_singleton x)
+
 theorem fg_sup {N₁ N₂ : submodule R M}
   (hN₁ : N₁.fg) (hN₂ : N₂.fg) : (N₁ ⊔ N₂).fg :=
 let ⟨t₁, ht₁⟩ := fg_def.1 hN₁, ⟨t₂, ht₂⟩ := fg_def.1 hN₂ in
@@ -432,6 +438,11 @@ class is_noetherian_ring (R) [ring R] extends is_noetherian R R : Prop
 
 theorem is_noetherian_ring_iff {R} [ring R] : is_noetherian_ring R ↔ is_noetherian R R :=
 ⟨λ h, h.1, @is_noetherian_ring.mk _ _⟩
+
+@[priority 100] -- see Note [lower instance priority]
+instance division_ring.is_noetherian_ring (K : Type*) [division_ring K] : is_noetherian_ring K :=
+{ noetherian := λ s, s.bot_or_top_of_division_ring.elim (λ h, h.symm ▸ fg_bot) $
+    λ h, by { rw [h, ← span_singleton_one], exact fg_span_singleton _ } }
 
 @[priority 80] -- see Note [lower instance priority]
 instance ring.is_noetherian_of_fintype (R M) [fintype M] [ring R] [add_comm_group M] [module R M] :

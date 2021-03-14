@@ -971,6 +971,15 @@ by simp_rw [le_def', mem_span_singleton]
 @[simp] lemma span_zero_singleton : (R ∙ (0:M)) = ⊥ :=
 by { ext, simp [mem_span_singleton, eq_comm] }
 
+@[simp] lemma span_singleton_units (u : units R) : (R ∙ (u : R)) = ⊤ :=
+top_unique $ λ x _, mem_span_singleton.2 ⟨x * ↑u⁻¹, by simp⟩
+
+lemma span_singleton_is_unit {x : R} (hx : is_unit x) : (R ∙ x) = ⊤ :=
+let ⟨u, hu⟩ := hx in hu ▸ span_singleton_units u
+
+@[simp] lemma span_singleton_one : (R ∙ (1 : R)) = ⊤ :=
+span_singleton_is_unit is_unit_one
+
 lemma span_singleton_eq_range (y : M) : ↑(R ∙ y) = range ((• y) : R → M) :=
 set.ext $ λ x, mem_span_singleton
 
@@ -1065,6 +1074,12 @@ begin
   obtain ⟨y, ⟨hyd, hxy⟩⟩ := (mem_Sup_of_directed hemp hdir).mp this,
   exact ⟨y, ⟨hyd, by simpa only [span_le, singleton_subset_iff]⟩⟩,
 end
+
+/-- In a field (or, more generally, in a division ring) all ideals are trivial. -/
+lemma bot_or_top_of_division_ring {K : Type*} [division_ring K] (s : submodule K K) :
+  s = ⊥ ∨ s = ⊤ :=
+(em (s = ⊥)).imp_right $ λ h, let ⟨x, hxs, hx0⟩ := s.ne_bot_iff.1 h in
+top_unique $ by rwa [← span_singleton_is_unit (is_unit.mk0 _ hx0), span_singleton_le_iff_mem]
 
 instance : is_compactly_generated (submodule R M) :=
 ⟨λ s, ⟨(λ x, span R {x}) '' s, ⟨λ t ht, begin

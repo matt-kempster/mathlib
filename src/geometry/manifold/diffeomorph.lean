@@ -309,6 +309,10 @@ def trans_diffeomorph (I : model_with_corners 𝕜 E H) (e : E ≃ₘ[𝕜] E') 
   continuous_to_fun := e.continuous.comp I.continuous,
   continuous_inv_fun := I.continuous_symm.comp e.symm.continuous }
 
+@[simp, reducible] def trans_equiv (I : model_with_corners 𝕜 E H) (e : E ≃L[𝕜] E') :
+  model_with_corners 𝕜 E' H :=
+I.trans_diffeomorph e.to_diffeomorph
+
 @[simp, mfld_simps] lemma coe_trans_diffeomorph : ⇑(I.trans_diffeomorph e) = e ∘ I := rfl
 @[simp, mfld_simps] lemma coe_trans_diffeomorph_symm :
   ⇑(I.trans_diffeomorph e).symm = I.symm ∘ e.symm := rfl
