@@ -185,7 +185,17 @@ protected lemma unique_diff : unique_diff_on 𝕜 (range I) := I.unique_diff'
 
 @[continuity] protected lemma continuous : continuous I := I.continuous_to_fun
 
+protected lemma continuous_at {x} : continuous_at I x := I.continuous.continuous_at
+
+protected lemma continuous_within_at {s x} : continuous_within_at I s x :=
+I.continuous_at.continuous_within_at
+
 @[continuity] lemma continuous_symm : continuous I.symm := I.continuous_inv_fun
+
+lemma continuous_at_symm {x} : continuous_at I.symm x := I.continuous_symm.continuous_at
+
+lemma continuous_within_at_symm {s x} : continuous_within_at I.symm s x :=
+I.continuous_symm.continuous_within_at
 
 @[simp, mfld_simps] lemma target_eq : I.target = range (I : H → E) :=
 by { rw [← image_univ, ← I.source_eq], exact (I.to_local_equiv.image_source_eq_target).symm }
@@ -739,6 +749,17 @@ lemma ext_chart_continuous_on_symm :
   continuous_on (ext_chart_at I x).symm (ext_chart_at I x).target :=
 λ y hy, (ext_chart_continuous_at_symm'' _ _ hy).continuous_within_at
 
+lemma ext_chart_preimage_open_of_open {s : set E} (hs : is_open s) :
+  is_open ((ext_chart_at I x).source ∩ ext_chart_at I x ⁻¹' s) :=
+(ext_chart_at_continuous_on I x).preimage_open_of_open (ext_chart_at_open_source _ _) hs
+
+/-- An auxiliary lemma used to prove properties of `msmooth_bump_function`. -/
+lemma compact_ext_chart_symm_image_closed_ball [proper_space E] {r : ℝ}
+  (hr : metric.closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target) :
+  is_compact ((ext_chart_at I x).symm '' (metric.closed_ball (ext_chart_at I x x) r ∩ range I)) :=
+((proper_space.compact_ball _ _).inter_right I.closed_range).image_of_continuous_on $
+  (ext_chart_continuous_on_symm _ _).mono hr
+
 lemma ext_chart_at_map_nhds_within_eq_image' {y : M} (hy : y ∈ (ext_chart_at I x).source) :
   map (ext_chart_at I x) (𝓝[s] y) =
     𝓝[ext_chart_at I x '' ((ext_chart_at I x).source ∩ s)] (ext_chart_at I x y) :=
@@ -812,6 +833,37 @@ lemma ext_chart_preimage_mem_nhds (ht : t ∈ 𝓝 x) :
 begin
   apply (ext_chart_continuous_at_symm I x).preimage_mem_nhds,
   rwa (ext_chart_at I x).left_inv (mem_ext_chart_source _ _)
+end
+
+open metric
+
+lemma nhds_basis_ext_chart_symm_image_closed_ball :
+  (𝓝 x).has_basis
+    (λ r : ℝ, 0 < r ∧ closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target)
+    (λ r, (ext_chart_at I x).symm '' (closed_ball (ext_chart_at I x x) r ∩ range I)) :=
+begin
+  rw ← ext_chart_at_symm_map_nhds_within_range I x,
+  exact ((nhds_within_has_basis nhds_basis_closed_ball _).restrict_subset
+    (ext_chart_at_target_mem_nhds_within _ _)).map _
+end
+
+lemma nhds_basis_ext_chart_symm_image_ball_subset {s : set M} (hs : s ∈ 𝓝 x) :
+  (𝓝 x).has_basis
+    (λ r : ℝ, 0 < r ∧ closed_ball (ext_chart_at I x x) r ∩ range I ⊆ (ext_chart_at I x).target ∧
+      (ext_chart_at I x).symm '' (closed_ball (ext_chart_at I x x) r ∩ range I) ⊆ s)
+    (λ r, (ext_chart_at I x).symm '' (ball (ext_chart_at I x x) r ∩ range I)) :=
+begin
+  set e := ext_chart_at I x,
+  refine ((nhds_basis_ext_chart_symm_image_closed_ball I x).restrict_subset hs).to_has_basis _ _,
+  { rintro r ⟨⟨hr0, hI⟩, hs⟩,
+    exact ⟨r, ⟨hr0, hI, hs⟩, image_subset _ (inter_subset_inter_left _ ball_subset_closed_ball)⟩ },
+  { rintro r ⟨hr0, hI, hs⟩,
+    have sub : closed_ball (e x) (r / 2) ∩ range I ⊆ ball (e x) r ∩ range I,
+      from inter_subset_inter_left _ (closed_ball_subset_ball (half_lt_self hr0)),
+    have sub' : closed_ball (e x) (r / 2) ∩ range I ⊆ closed_ball (e x) r ∩ range I,
+      from subset.trans sub (inter_subset_inter_left _ ball_subset_closed_ball),
+    exact ⟨r / 2, ⟨⟨half_pos hr0, subset.trans sub' hI⟩, subset.trans (image_subset _ sub') hs⟩,
+      image_subset _ sub⟩ }
 end
 
 /-- Technical lemma to rewrite suitably the preimage of an intersection under an extended chart, to
