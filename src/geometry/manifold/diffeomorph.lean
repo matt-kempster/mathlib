@@ -306,7 +306,8 @@ namespace model_with_corners
 
 variables (I) (e : E ≃ₘ[𝕜] E')
 
-/-- Apply a diffeomorphism (e.g., a continuous linear equivalence) to the model vector space. -/
+/-- Apply a diffeomorphism to the model vector space; see `trans_equiv` for the special case
+`e = continuous_linear_map.to_diffeomorph _`. -/
 def trans_diffeomorph (I : model_with_corners 𝕜 E H) (e : E ≃ₘ[𝕜] E') :
   model_with_corners 𝕜 E' H :=
 { to_local_equiv := I.to_local_equiv.trans e.to_equiv.to_local_equiv,
@@ -315,6 +316,7 @@ def trans_diffeomorph (I : model_with_corners 𝕜 E H) (e : E ≃ₘ[𝕜] E') 
   continuous_to_fun := e.continuous.comp I.continuous,
   continuous_inv_fun := I.continuous_symm.comp e.symm.continuous }
 
+/-- Apply a continuous linear equivalence to the model vector space. -/
 @[simp, reducible] def trans_equiv (I : model_with_corners 𝕜 E H) (e : E ≃L[𝕜] E') :
   model_with_corners 𝕜 E' H :=
 I.trans_diffeomorph e.to_diffeomorph
