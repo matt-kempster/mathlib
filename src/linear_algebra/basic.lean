@@ -1843,6 +1843,10 @@ def of_linear (h₁ : f.comp g = linear_map.id) (h₂ : g.comp f = linear_map.id
 @[simp] protected theorem range : (e : M →ₗ[R] M₂).range = ⊤ :=
 linear_map.range_eq_top.2 e.to_equiv.surjective
 
+@[simp] theorem range_comp [semimodule R M] [semimodule R M₂] [semimodule R M₃] (f : M ≃ₗ[R] M₂)
+  (g : M₂ →ₗ[R] M₃) : linear_map.range (g.comp (f : M →ₗ[R] M₂)) = g.range :=
+by rw [linear_map.range_comp, linear_equiv.range, submodule.map_top]
+
 lemma eq_bot_of_equiv [semimodule R M₂] (e : p ≃ₗ[R] (⊥ : submodule R M₂)) : p = ⊥ :=
 begin
   refine bot_unique (submodule.le_def'.2 $ assume b hb, (submodule.mem_bot R).2 _),

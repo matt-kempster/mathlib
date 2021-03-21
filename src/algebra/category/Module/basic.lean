@@ -90,6 +90,8 @@ variables {R} {M N U : Module.{v} R}
 @[simp] lemma coe_comp (f : M ⟶ N) (g : N ⟶ U) :
   ((f ≫ g) : M → U) = g ∘ f := rfl
 
+lemma coe_comp' (f : M ⟶ N) (g : N ⟶ U) : f ≫ g = g.comp f := rfl
+
 end Module
 
 variables {R}
@@ -98,6 +100,12 @@ variables {X₁ X₂ : Type v}
 /-- Reinterpreting a linear map in the category of `R`-modules. -/
 def Module.as_hom [add_comm_group X₁] [module R X₁] [add_comm_group X₂] [module R X₂] :
   (X₁ →ₗ[R] X₂) → (Module.of R X₁ ⟶ Module.of R X₂) := id
+
+def Module.as_hom' [add_comm_group X₁] [module R X₁] {X₂ : Module.{v} R} :
+  (X₁ →ₗ[R] X₂) → (Module.of R X₁ ⟶ X₂) := id
+
+def Module.as_hom'' {X₁ : Module.{v} R} [add_comm_group X₂] [module R X₂] :
+  (X₁ →ₗ[R] X₂) → (X₁ ⟶ Module.of R X₂) := id
 
 /-- Build an isomorphism in the category `Module R` from a `linear_equiv` between `module`s. -/
 @[simps]
@@ -119,6 +127,14 @@ This version is better than `linear_equiv_to_Module_iso` when applicable, becaus
 def linear_equiv.to_Module_iso' {M N : Module.{v} R} (i : M ≃ₗ[R] N) : M ≅ N :=
 { hom := i,
   inv := i.symm,
+  hom_inv_id' := linear_map.ext $ λ x, by simp,
+  inv_hom_id' := linear_map.ext $ λ x, by simp }
+
+@[simps]
+def linear_equiv.to_Module_iso'' {X₁ : Module.{v} R} {g₂ : add_comm_group X₂} {m₂ : module R X₂}
+  (e : X₁ ≃ₗ[R] X₂) : X₁ ≅ Module.of R X₂ :=
+{ hom := (e : X₁ →ₗ[R] X₂),
+  inv := (e.symm : X₂ →ₗ[R] X₁),
   hom_inv_id' := linear_map.ext $ λ x, by simp,
   inv_hom_id' := linear_map.ext $ λ x, by simp }
 
@@ -171,6 +187,12 @@ concrete_category.mono_of_injective _ $ linear_map.ker_eq_bot.1 hf
 
 lemma epi_of_range_eq_top (hf : f.range = ⊤) : epi f :=
 concrete_category.epi_of_surjective _ $ linear_map.range_eq_top.1 hf
+
+instance mono_as_hom'_subtype (U : submodule R M) : mono (as_hom' U.subtype) :=
+mono_of_ker_eq_bot _ (submodule.ker_subtype U)
+
+instance epi_as_hom''_mkq (U : submodule R M) : epi (as_hom'' U.mkq) :=
+epi_of_range_eq_top _ $ submodule.range_mkq _
 
 end epi_mono
 

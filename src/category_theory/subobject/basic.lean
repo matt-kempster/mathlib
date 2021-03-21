@@ -185,6 +185,14 @@ begin
   simp only [category.comp_id],
 end
 
+lemma eq_of_comm {B : C} {X Y : subobject B} (f : (X : C) ≅ (Y : C)) (w : f.hom ≫ Y.arrow = X.arrow) :
+  X = Y :=
+le_antisymm (le_of_comm f.hom w) $ le_of_comm f.inv $ f.inv_comp_eq.2 w.symm
+
+lemma eq_of_comm₁ {B A : C} {X : subobject B} (f : A ⟶ B) [mono f] (i : (X : C) ≅ A)
+  (w : i.hom ≫ f = X.arrow) : X = subobject.mk f :=
+eq_of_comm (i.trans (underlying_iso f).symm) $ by simp [w]
+
 end subobject
 
 
