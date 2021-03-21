@@ -604,8 +604,11 @@ by ext x; simp [ext_iff]; tauto
 
 end prod
 
-/-- Combine two `local_equiv`s using `set.piecewise`. The definition assumes
-`e.is_image s t` and `e'.is_image s t`. -/
+/-- Combine two `local_equiv`s using `set.piecewise`. The source of the new `local_equiv` is
+`s.ite e.source e'.source = e.source ∩ s ∪ e'.source \ s`, and similarly for target.  The function
+sends `e.source ∩ s` to `e.target ∩ t` using `e` and `e'.source \ s` to `e'.target \ t` using `e'`,
+and similarly for the inverse function. The definition assumes `e.is_image s t` and
+`e'.is_image s t`. -/
 @[simps] def piecewise (e e' : local_equiv α β) (s : set α) (t : set β)
   [∀ x, decidable (x ∈ s)] [∀ y, decidable (y ∈ t)] (H : e.is_image s t) (H' : e'.is_image s t) :
   local_equiv α β :=
@@ -624,6 +627,8 @@ lemma symm_piecewise (e e' : local_equiv α β) {s : set α} {t : set β}
   (e.piecewise e' s t H H').symm = e.symm.piecewise e'.symm t s H.symm H'.symm :=
 rfl
 
+/-- Combine two `local_equiv`s with disjoint sources and disjoint targets. We do not reuse
+`local_equiv.piecewise` here to provide better formulas for `source` and `target`. -/
 @[simps] def disjoint_union (e e' : local_equiv α β) (hs : disjoint e.source e'.source)
   (ht : disjoint e.target e'.target) [∀ x, decidable (x ∈ e.source)]
   [∀ y, decidable (y ∈ e.target)] :
