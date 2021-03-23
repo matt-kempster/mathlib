@@ -95,7 +95,7 @@ instance : has_coe_t X (action_category M X) :=
 /-- A source `x` vertrex and a scalar `m` determine a morphism in the action category. -/
 def hom_of_pair (s : X) (m : M) : (s : action_category M X) ⟶ (m • s : X) := ⟨m, rfl⟩
 
-@[simp] lemma lift_hom.val (x : X) (m : M) : (hom_of_pair x m).val = m := rfl
+@[simp] lemma hom_of_pair.val (x : X) (m : M) : (hom_of_pair x m).val = m := rfl
 
 @[simp] protected lemma id_val (x : action_category M X) : subtype.val (𝟙 x) = 1 := rfl
 
