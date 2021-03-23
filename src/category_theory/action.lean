@@ -96,6 +96,11 @@ def lift_to_hom (x : X) (m : M) : (x : action_category M X) ⟶ (m • x : X) :=
 
 @[simp] lemma lift_hom.val (x : X) (m : M) : (lift_to_hom x m).val = m := rfl
 
+@[simp] protected lemma id_val (x : action_category M X) : subtype.val (𝟙 x) = 1 := rfl
+
+@[simp] protected lemma comp_val {x y z : action_category M X}
+  (f : x ⟶ y) (g : y ⟶ z) : (f ≫ g).val = g.val * f.val := rfl
+
 protected def cases {P : Π ⦃a b : action_category M X⦄, (a ⟶ b) → Sort*}
   (hyp : ∀ x m, P (lift_to_hom x m)) ⦃a b⦄ (f : a ⟶ b) : P f :=
 eq.mp (by tidy) (hyp a.snd f.val)

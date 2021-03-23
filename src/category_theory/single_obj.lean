@@ -57,6 +57,9 @@ instance category [monoid α] : category (single_obj α) :=
   id_comp' := λ _ _, mul_one,
   assoc' := λ _ _ _ _ x y z, (mul_assoc z y x).symm }
 
+lemma comp_as_mul [monoid α] {x y z : single_obj α} (f : x ⟶ y) (g : y ⟶ z) :
+  f ≫ g = g * f := rfl
+
 /--
 Groupoid structure on `single_obj α`.
 
