@@ -85,5 +85,20 @@ lemma stabilizer_iso_End_apply (f : stabilizer.submonoid M x) :
 lemma stabilizer_iso_End_symm_apply (f : End _) :
   (stabilizer_iso_End M x).inv_fun f = f := rfl
 
+variables {M X}
+
+instance : has_coe_t X (action_category M X) :=
+⟨obj_equiv M X⟩
+
+@[simp] protected lemma coe_snd (x : X) : (↑x : action_category M X).snd = x := rfl
+
+def lift_to_hom (x : X) (m : M) : (x : action_category M X) ⟶ (m • x : X) := ⟨m, rfl⟩
+
+@[simp] lemma lift_hom.val (x : X) (m : M) : (lift_to_hom x m).val = m := rfl
+
+protected def cases {P : Π ⦃a b : action_category M X⦄, (a ⟶ b) → Sort*}
+  (hyp : ∀ x m, P (lift_to_hom x m)) ⦃a b⦄ (f : a ⟶ b) : P f :=
+eq.mp (by tidy) (hyp a.snd f.val)
+
 end action_category
 end category_theory
