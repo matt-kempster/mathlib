@@ -65,7 +65,7 @@ instance : group circle :=
 @[simp] lemma coe_inv_circle (z : circle) : ↑(z⁻¹) = conj z := rfl
 @[simp] lemma coe_div_circle (z w : circle) : ↑(z / w) = ↑z * conj w := rfl
 
-instance : compact_space circle := metric.sphere.compact_space
+instance : compact_space circle := metric.sphere.compact_space _ _
 
 -- the following result could instead be deduced from the Lie group structure on the circle using
 -- `topological_group_of_lie_group`, but that seems a little awkward since one has to first provide
