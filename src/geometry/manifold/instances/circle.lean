@@ -64,12 +64,6 @@ instance : group circle :=
     ← mul_self_abs] },
   .. circle.to_monoid }
 
--- variables {G : Type*} [monoid G] {H : submonoid G}
-
--- @[simp, norm_cast, to_additive] lemma coe_mul (x y : H) : (↑(x * y) : G) = ↑x * ↑y := rfl
--- @[simp, norm_cast, to_additive] lemma coe_one : ((1 : H) : G) = 1 := rfl
--- @[simp, norm_cast] lemma coe_mk (x : G) (hx : x ∈ H) : ((⟨x, hx⟩ : H) : G) = x := rfl
-
 lemma coe_inv_circle_eq_conj (z : circle) : ↑(z⁻¹) = conj z := rfl
 
 @[simp] lemma coe_inv_circle (z : circle) : ↑(z⁻¹) = (z : ℂ)⁻¹ :=

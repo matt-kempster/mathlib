@@ -11,6 +11,29 @@ import geometry.manifold.instances.circle
 
 # Fourier analysis on the circle
 
+This file contains some first steps towards Fourier series.
+
+## Main definitions
+
+* `haar_circle`, Haar measure on the circle, normalized to have total measure `1`
+* instances `measure_space`, `probability_measure` for the circle with respect to this measure
+* for `n : ℤ`, `fourier n` is the monomial `λ z, z ^ n`, bundled as a continuous map from `circle`
+  to `ℂ`
+
+## Main statements
+
+The theorem `orthonormal_fourier` states that the functions `fourier n`, when sent via
+`continuous_map.to_Lp` to the L^2 space on the circle, form an orthonormal set.
+
+## TODO
+
+* Show that `submodule.span fourier` is dense in `C(circle, ℂ)`, i.e. that its
+  `submodule.topological_closure` is `⊤`.  This follows from the Stone-Weierstrass theorem after
+  checking that it is a subalgebra, closed under conjugation, and separates points.
+* Show that the image of `submodule.span fourier` under `continuous_map.to_Lp` is dense in the
+  `L^2` space on the circle, and thus that the functions `fourier` form a Hilbert basis.  This
+  follows from the previous result using general theory on approximation by continuous functions.
+
 -/
 
 noncomputable theory
@@ -59,22 +82,18 @@ by simp [← coe_inv_circle_eq_conj z]
 lemma mul_fourier {m n : ℤ} {z : circle} : (fourier m z) * (fourier n z) = fourier (m + n) z :=
 by simp [fpow_add (nonzero_of_mem_circle z)]
 
+/-- For `n ≠ 0`, a rotation by `n⁻¹ * real.pi` negates the monomial `z ^ n`. -/
 lemma fourier_add_half_inv_index {n : ℤ} (hn : n ≠ 0) (z : circle) :
   fourier n ((exp_map_circle (n⁻¹ * real.pi) * z)) = - fourier n z :=
 begin
-  simp,
-  rw mul_fpow,
-  rw ← complex.exp_int_mul,
-  transitivity (-1) * (z:ℂ) ^ n,
-  { congr,
-    rw ← complex.exp_pi_mul_I,
-    congr' 1,
-    have : (n:ℂ) ≠ 0 := by exact_mod_cast hn,
+  have : ↑n * ((↑n)⁻¹ * ↑real.pi * complex.I) = ↑real.pi * complex.I,
+  { have : (n:ℂ) ≠ 0 := by exact_mod_cast hn,
     field_simp,
     ring },
-  simp,
+  simp [mul_fpow, ← complex.exp_int_mul, complex.exp_pi_mul_I, this]
 end
 
+/-- The monomials `z ^ n` are an orthonormal set with respect to Haar measure on the circle. -/
 lemma orthonormal_fourier : orthonormal ℂ (λ n, to_Lp ℂ 2 haar_circle ℂ (fourier n)) :=
 begin
   rw orthonormal_iff_ite,
@@ -82,12 +101,12 @@ begin
   rw continuous_map.inner_to_Lp haar_circle (fourier i) (fourier j),
   split_ifs,
   { simp [h, probability_measure.measure_univ, conj_fourier, mul_fourier, -fourier_apply] },
-  simp [conj_fourier, mul_fourier, -fourier_apply],
-  have : -i + j ≠ 0,
+  simp only [conj_fourier, mul_fourier, is_R_or_C.conj_to_complex],
+  have hij : -i + j ≠ 0,
   { rw add_comm,
     exact sub_ne_zero.mpr (ne.symm h) },
   exact integral_zero_of_mul_left_eq_neg (is_mul_left_invariant_haar_measure _)
-    (fourier (-i + j)).continuous.measurable (fourier_add_half_inv_index this),
+    (fourier (-i + j)).continuous.measurable (fourier_add_half_inv_index hij)
 end
 
 end fourier
