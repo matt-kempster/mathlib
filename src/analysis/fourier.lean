@@ -18,6 +18,10 @@ open topological_space continuous_map measure_theory measure_theory.measure
 
 local attribute [instance] fact_one_le_two_ennreal
 
+section haar_circle
+/-! We make the circle into a measure space, using the Haar measure normalized to have total
+measure 1. -/
+
 instance : measurable_space circle := borel circle
 instance : borel_space circle := ⟨rfl⟩
 
@@ -26,15 +30,13 @@ def haar_circle : measure circle := haar_measure positive_compacts_univ
 
 instance : probability_measure haar_circle := ⟨haar_measure_self⟩
 
-/-
-lemma foo {α : Type*} [measurable_space α] {μ : measure α} [probability_measure μ] :
-  μ set.univ = 1 :=
-probability_measure.measure_univ
--/
-
 instance : measure_space circle :=
 { volume := haar_circle,
   .. circle.measurable_space }
+
+end haar_circle
+
+section fourier
 
 /-- The family of monomials `λ z, z ^ n`, parametrized by `n : ℤ` and considered as bundled
 continuous maps from `circle` to `ℂ`. -/
@@ -52,19 +54,10 @@ def fourier (n : ℤ) : C(circle, ℂ) :=
 @[simp] lemma fourier_zero {z : circle} : fourier 0 z = 1 := rfl
 
 lemma conj_fourier {n : ℤ} {z : circle} : complex.conj (fourier n z) = fourier (-n) z :=
-begin
-  simp [fourier],
-  sorry
-end
+by simp [← coe_inv_circle_eq_conj z]
 
 lemma mul_fourier {m n : ℤ} {z : circle} : (fourier m z) * (fourier n z) = fourier (m + n) z :=
-begin
-  simp [fourier],
-  sorry
-end
-
-lemma complex.exp_int_mul (z : ℂ) (n : ℤ) : complex.exp (n * z) = (complex.exp z) ^ n :=
-sorry
+by simp [fpow_add (nonzero_of_mem_circle z)]
 
 lemma fourier_add_half_inv_index {n : ℤ} (hn : n ≠ 0) (z : circle) :
   fourier n ((exp_map_circle (n⁻¹ * real.pi) * z)) = - fourier n z :=
@@ -90,7 +83,11 @@ begin
   split_ifs,
   { simp [h, probability_measure.measure_univ, conj_fourier, mul_fourier, -fourier_apply] },
   simp [conj_fourier, mul_fourier, -fourier_apply],
-  have : -i + j ≠ 0 := sorry,
+  have : -i + j ≠ 0,
+  { rw add_comm,
+    exact sub_ne_zero.mpr (ne.symm h) },
   exact integral_zero_of_mul_left_eq_neg (is_mul_left_invariant_haar_measure _)
     (fourier (-i + j)).continuous.measurable (fourier_add_half_inv_index this),
 end
+
+end fourier

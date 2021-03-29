@@ -54,6 +54,8 @@ lemma circle_def : ↑circle = {z : ℂ | abs z = 1} := by { ext, simp }
 
 @[simp] lemma abs_eq_of_mem_circle (z : circle) : abs z = 1 := by { convert z.2, simp }
 
+@[simp] lemma norm_sq_eq_of_mem_circle (z : circle) : norm_sq z = 1 := by simp [norm_sq_eq_abs]
+
 lemma nonzero_of_mem_circle (z : circle) : (z:ℂ) ≠ 0 := nonzero_of_mem_unit_sphere z
 
 instance : group circle :=
@@ -62,8 +64,24 @@ instance : group circle :=
     ← mul_self_abs] },
   .. circle.to_monoid }
 
-@[simp] lemma coe_inv_circle (z : circle) : ↑(z⁻¹) = conj z := rfl
-@[simp] lemma coe_div_circle (z w : circle) : ↑(z / w) = ↑z * conj w := rfl
+-- variables {G : Type*} [monoid G] {H : submonoid G}
+
+-- @[simp, norm_cast, to_additive] lemma coe_mul (x y : H) : (↑(x * y) : G) = ↑x * ↑y := rfl
+-- @[simp, norm_cast, to_additive] lemma coe_one : ((1 : H) : G) = 1 := rfl
+-- @[simp, norm_cast] lemma coe_mk (x : G) (hx : x ∈ H) : ((⟨x, hx⟩ : H) : G) = x := rfl
+
+lemma coe_inv_circle_eq_conj (z : circle) : ↑(z⁻¹) = conj z := rfl
+
+@[simp] lemma coe_inv_circle (z : circle) : ↑(z⁻¹) = (z : ℂ)⁻¹ :=
+begin
+  rw coe_inv_circle_eq_conj,
+  apply eq_inv_of_mul_right_eq_one,
+  rw [mul_comm, ← complex.norm_sq_eq_conj_mul_self],
+  simp,
+end
+
+@[simp] lemma coe_div_circle (z w : circle) : ↑(z / w) = (z:ℂ) / w :=
+show ↑(z * w⁻¹) = (z:ℂ) * w⁻¹, by simp
 
 instance : compact_space circle := metric.sphere.compact_space _ _
 
