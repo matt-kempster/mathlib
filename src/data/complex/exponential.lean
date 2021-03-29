@@ -472,7 +472,7 @@ by rw [← mul_right_inj' (exp_ne_zero x), ← exp_add];
 lemma exp_sub : exp (x - y) = exp x / exp y :=
 by simp [sub_eq_add_neg, exp_add, exp_neg, div_eq_mul_inv]
 
-lemma complex.exp_int_mul (z : ℂ) (n : ℤ) : complex.exp (n * z) = (complex.exp z) ^ n :=
+lemma exp_int_mul (z : ℂ) (n : ℤ) : complex.exp (n * z) = (complex.exp z) ^ n :=
 begin
   have : ∀ w : ℂ, ∀ n : ℤ, 0 < n → complex.exp (n * w) = (complex.exp w) ^ n,
   { intros w n hn,
