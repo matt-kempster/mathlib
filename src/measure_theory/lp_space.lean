@@ -1789,11 +1789,14 @@ linear_map.mk_continuous
 
 variables {E p 𝕜}
 
+<<<<<<< HEAD
 lemma coe_fn_to_Lp [normed_field 𝕜] [opens_measurable_space 𝕜] [normed_space 𝕜 E] [fact (1 ≤ p)]
   (f : α →ᵇ E) :
   to_Lp E p μ 𝕜 f =ᵐ[μ] f :=
 ae_eq_fun.coe_fn_mk f _
 
+=======
+>>>>>>> origin/master
 lemma to_Lp_norm_le [nondiscrete_normed_field 𝕜] [opens_measurable_space 𝕜] [normed_space 𝕜 E]
   [fact (1 ≤ p)] :
   ∥to_Lp E p μ 𝕜∥ ≤ (measure_univ_nnreal μ) ^ (p.to_real)⁻¹ :=
@@ -1842,8 +1845,7 @@ rfl
   (to_Lp E p μ 𝕜 f : α →ₘ[μ] E) = f.to_ae_eq_fun μ :=
 rfl
 
-variables [nonempty α] [nontrivial E] [nondiscrete_normed_field 𝕜] [opens_measurable_space 𝕜]
-  [normed_space 𝕜 E]
+variables [nondiscrete_normed_field 𝕜] [opens_measurable_space 𝕜] [normed_space 𝕜 E]
 
 lemma to_Lp_norm_eq_to_Lp_norm_coe :
   ∥to_Lp E p μ 𝕜∥ = ∥bounded_continuous_function.to_Lp E p μ 𝕜∥ :=
