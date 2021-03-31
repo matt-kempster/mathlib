@@ -118,15 +118,16 @@ section
 open_locale classical
 
 protected lemma mv_polynomial (ι : Type*) [fintype ι] : finite_type R (mv_polynomial ι R) :=
-⟨⟨finset.univ.image mv_polynomial.X, begin
-  rw eq_top_iff, refine λ p, mv_polynomial.induction_on' p
-    (λ u x, finsupp.induction u (subalgebra.algebra_map_mem _ x)
-      (λ i n f hif hn ih, _))
-    (λ p q ihp ihq, subalgebra.add_mem _ ihp ihq),
-  rw [add_comm, mv_polynomial.monomial_add_single],
-  exact subalgebra.mul_mem _ ih
-    (subalgebra.pow_mem _ (subset_adjoin $ finset.mem_image_of_mem _ $ finset.mem_univ _) _)
-end⟩⟩
+sorry
+-- ⟨⟨finset.univ.image mv_polynomial.X, begin
+--   rw eq_top_iff, refine λ p, mv_polynomial.induction_on' p
+--     (λ u x, finsupp.induction u (subalgebra.algebra_map_mem _ x)
+--       (λ i n f hif hn ih, _))
+--     (λ p q ihp ihq, subalgebra.add_mem _ ihp ihq),
+--   rw [add_comm, mv_polynomial.monomial_add_single],
+--   exact subalgebra.mul_mem _ ih
+--     (subalgebra.pow_mem _ (subset_adjoin $ finset.mem_image_of_mem _ $ finset.mem_univ _) _)
+-- end⟩⟩
 end
 
 variables {R A B}
@@ -372,21 +373,21 @@ lemma id : finite (ring_hom.id A) := module.finite.self A
 
 variables {A}
 
-lemma of_surjective (f : A →+* B) (hf : surjective f) : f.finite :=
-begin
-  letI := f.to_algebra,
-  exact module.finite.of_surjective (algebra.of_id A B).to_linear_map hf
-end
+lemma of_surjective (f : A →+* B) (hf : surjective f) : f.finite := sorry
+-- begin
+--   letI := f.to_algebra,
+--   exact module.finite.of_surjective (algebra.of_id A B).to_linear_map hf
+-- end
 
-lemma comp {g : B →+* C} {f : A →+* B} (hg : g.finite) (hf : f.finite) : (g.comp f).finite :=
-@module.finite.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
-begin
-  fconstructor,
-  intros a b c,
-  simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
-  refl
-end
-hf hg
+lemma comp {g : B →+* C} {f : A →+* B} (hg : g.finite) (hf : f.finite) : (g.comp f).finite := sorry
+-- @module.finite.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
+-- begin
+--   fconstructor,
+--   intros a b c,
+--   simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
+--   refl
+-- end
+-- hf hg
 
 lemma finite_type {f : A →+* B} (hf : f.finite) : finite_type f :=
 @module.finite.finite_type _ _ _ _ f.to_algebra hf
@@ -402,23 +403,23 @@ lemma id : finite_type (ring_hom.id A) := algebra.finite_type.self A
 variables {A}
 
 lemma comp_surjective {f : A →+* B} {g : B →+* C} (hf : f.finite_type) (hg : surjective g) :
-  (g.comp f).finite_type :=
-@algebra.finite_type.of_surjective A B C _ _ f.to_algebra _ (g.comp f).to_algebra hf
-{ to_fun := g, commutes' := λ a, rfl, .. g } hg
+  (g.comp f).finite_type := sorry
+-- @algebra.finite_type.of_surjective A B C _ _ f.to_algebra _ (g.comp f).to_algebra hf
+-- { to_fun := g, commutes' := λ a, rfl, .. g } hg
 
 lemma of_surjective (f : A →+* B) (hf : surjective f) : f.finite_type :=
 by { rw ← f.comp_id, exact (id A).comp_surjective hf }
 
 lemma comp {g : B →+* C} {f : A →+* B} (hg : g.finite_type) (hf : f.finite_type) :
-  (g.comp f).finite_type :=
-@algebra.finite_type.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
-begin
-  fconstructor,
-  intros a b c,
-  simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
-  refl
-end
-hf hg
+  (g.comp f).finite_type := sorry
+-- @algebra.finite_type.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
+-- begin
+--   fconstructor,
+--   intros a b c,
+--   simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
+--   refl
+-- end
+-- hf hg
 
 lemma of_finite_presentation {f : A →+* B} (hf : f.finite_presentation) : f.finite_type :=
 @algebra.finite_type.of_finite_presentation A B _ _ f.to_algebra hf
@@ -434,9 +435,9 @@ lemma id : finite_presentation (ring_hom.id A) := algebra.finite_presentation.se
 variables {A}
 
 lemma comp_surjective {f : A →+* B} {g : B →+* C} (hf : f.finite_presentation) (hg : surjective g)
-  (hker : g.ker.fg) :  (g.comp f).finite_presentation :=
-@algebra.finite_presentation.of_surjective A B C _ _ f.to_algebra _ (g.comp f).to_algebra
-{ to_fun := g, commutes' := λ a, rfl, .. g } hg hker hf
+  (hker : g.ker.fg) :  (g.comp f).finite_presentation := sorry
+-- @algebra.finite_presentation.of_surjective A B C _ _ f.to_algebra _ (g.comp f).to_algebra
+-- { to_fun := g, commutes' := λ a, rfl, .. g } hg hker hf
 
 lemma of_surjective (f : A →+* B) (hf : surjective f) (hker : f.ker.fg) : f.finite_presentation :=
 by { rw ← f.comp_id, exact (id A).comp_surjective hf hker}
@@ -445,13 +446,13 @@ lemma of_finite_type [is_noetherian_ring A] {f : A →+* B} : f.finite_type ↔ 
 @algebra.finite_presentation.of_finite_type A B _ _ f.to_algebra _
 
 lemma comp {g : B →+* C} {f : A →+* B} (hg : g.finite_presentation) (hf : f.finite_presentation) :
-  (g.comp f).finite_presentation :=
-@algebra.finite_presentation.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
-{ smul_assoc := λ a b c, begin
-    simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
-    refl
-  end }
-hf hg
+  (g.comp f).finite_presentation := sorry
+-- @algebra.finite_presentation.trans A B C _ _ f.to_algebra _ (g.comp f).to_algebra g.to_algebra
+-- { smul_assoc := λ a b c, begin
+--     simp only [algebra.smul_def, ring_hom.map_mul, mul_assoc],
+--     refl
+--   end }
+-- hf hg
 
 end finite_presentation
 
